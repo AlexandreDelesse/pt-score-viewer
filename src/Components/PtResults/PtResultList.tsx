@@ -1,18 +1,34 @@
-import { Grid } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 import type { TestResult } from "../../types/testRestult";
 import PtResultListItem from "./PtResultListItem";
 
 interface Props {
   ptResults: TestResult[];
+  onClick: (t: TestResult) => void;
+  nbOfTest: (resultName: string) => number;
 }
 
 function PtResultList(props: Props) {
-  const { ptResults } = props;
+  const { ptResults, onClick, nbOfTest } = props;
+
+  if (!ptResults.length)
+    return (
+      <Box mt={5}>
+        <Typography textAlign={"center"}>
+          Importer un fichier JSON PiloteTest pour afficher les résultats !
+        </Typography>
+      </Box>
+    );
 
   return (
     <Grid container spacing={2}>
       {ptResults.map((i) => (
-        <PtResultListItem test={i} key={i.at} />
+        <PtResultListItem
+          nbOfTest={nbOfTest(i.test)}
+          onClick={onClick}
+          test={i}
+          key={i.at}
+        />
       ))}
     </Grid>
   );
