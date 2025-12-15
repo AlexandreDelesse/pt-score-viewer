@@ -6,10 +6,11 @@ interface Props {
   ptResults: TestResult[];
   onClick: (t: TestResult) => void;
   nbOfTest: (resultName: string) => number;
+  getStreak: (t: string) => number;
 }
 
 function PtResultList(props: Props) {
-  const { ptResults, onClick, nbOfTest } = props;
+  const { ptResults, onClick, nbOfTest, getStreak } = props;
 
   if (!ptResults.length)
     return (
@@ -28,6 +29,7 @@ function PtResultList(props: Props) {
           onClick={onClick}
           test={i}
           key={i.test + i.at}
+          streak={getStreak(i.test)}
         />
       ))}
     </Grid>

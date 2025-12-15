@@ -29,7 +29,7 @@ function StanineDisplay(props: Props) {
   return (
     <Stack direction={"row"} spacing={2} p={2} mt={1}>
       {numbers.map((n) =>
-        Math.trunc(stanine) == n ? (
+        fixedStanine == n ? (
           <Box
             key={n}
             sx={{
@@ -38,7 +38,7 @@ function StanineDisplay(props: Props) {
               color: getStanineColor(n),
             }}
           >
-            {stanine.toFixed(1)}
+            {fixedStanine}
           </Box>
         ) : (
           <Box

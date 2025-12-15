@@ -15,11 +15,9 @@ import { LineChart } from "@mui/x-charts";
 import useScoreService from "./services/useScoreService";
 
 function App() {
-  const { scoreList, highestStanineList, meanStanineList, updateScoreList } =
+  const { scoreList, meanStanineList, updateScoreList, getStreak } =
     useScoreService();
-  const [showMean, setShowMean] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult>();
-  console.log(scoreList);
 
   const fileInputRef = useRef<HTMLInputElement>(null); // TODO: A placer dans un composant file picker
 
@@ -57,8 +55,6 @@ function App() {
 
   const handleOnSaveClick = () =>
     window.localStorage.setItem("results", JSON.stringify(scoreList));
-
-  const toggleMean = () => setShowMean((old) => !old);
 
   if (selectedResult)
     return (
@@ -123,17 +119,13 @@ function App() {
           </Button>
         )}
       </>
-      <Stack direction={"row"} alignItems={"center"}>
-        <Typography>Moyenne</Typography>
-        <Switch value={showMean} onClick={toggleMean} />
-        <Typography>Meilleur résultat</Typography>
-      </Stack>
 
       <Typography>{scoreList.length} Résultats </Typography>
       <PtResultList
         nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
         onClick={handleOnTestClick}
-        ptResults={showMean ? meanStanineList : highestStanineList}
+        ptResults={meanStanineList}
+        getStreak={getStreak} //TODO: Pas propre du tout ! a fair eévoluer !
       />
     </PageBloc>
   );

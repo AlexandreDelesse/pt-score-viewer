@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { TestResult } from "../types/testRestult";
-import { meanStanineOnLastFive } from "./scoreTools";
+import { getStanineStreak, meanStanineOnLastFive } from "./scoreTools";
 
 describe("meanStanineOnLastFive", () => {
   it("limits the last 5 values and compute mean stanine", () => {
@@ -13,6 +13,17 @@ describe("meanStanineOnLastFive", () => {
       },
     ]);
   });
+});
+
+describe("Returns current streak", () => {
+  it("returns current streak above stanine 7 if no threshold parameters", () =>
+    expect(getStanineStreak(mockData)).toBe(0));
+
+  it("returns current streak above threshold", () =>
+    expect(getStanineStreak(mockData, 5)).toBe(1));
+
+  it("returns current streak above threshold", () =>
+    expect(getStanineStreak(mockData, 4)).toBe(7));
 });
 
 const mockData: TestResult[] = [
