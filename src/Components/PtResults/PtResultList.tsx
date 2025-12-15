@@ -27,7 +27,7 @@ function PtResultList(props: Props) {
           nbOfTest={nbOfTest(i.test)}
           onClick={onClick}
           test={i}
-          key={i.at}
+          key={i.test + i.at}
         />
       ))}
     </Grid>

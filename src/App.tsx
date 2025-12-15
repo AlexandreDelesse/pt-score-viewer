@@ -7,37 +7,19 @@ import "@fontsource/roboto/700.css";
 import PageBloc from "./Components/Shared/PageBloc";
 import PtResultList from "./Components/PtResults/PtResultList";
 import type { TestResult } from "./types/testRestult";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Stack, Switch, Typography } from "@mui/material";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";
 import { LineChart } from "@mui/x-charts";
+import useScoreService from "./services/useScoreService";
 
 function App() {
-  const [ptResults, setPtResult] = useState<TestResult[]>([]);
+  const { scoreList, highestStanineList, meanStanineList, updateScoreList } =
+    useScoreService();
+  const [showMean, setShowMean] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult>();
-
-  const filterByHighestStanine = () => {
-    let stanineFiltered: TestResult[] = [];
-    ptResults.forEach((s: TestResult) => {
-      let curStan = stanineFiltered.find((t) => t.test == s.test);
-      if (!curStan) stanineFiltered = [...stanineFiltered, s];
-      else {
-        if (curStan.stanine < s.stanine) {
-          stanineFiltered = [
-            ...stanineFiltered.filter((x) => x.test != s.test),
-            s,
-          ];
-        }
-      }
-    });
-    return stanineFiltered.sort((a, b) => a.stanine - b.stanine);
-  };
-
-  useEffect(() => {
-    const r = window.localStorage.getItem("results") || "[]";
-    setPtResult(JSON.parse(r));
-  }, []);
+  console.log(scoreList);
 
   const fileInputRef = useRef<HTMLInputElement>(null); // TODO: A placer dans un composant file picker
 
@@ -61,20 +43,22 @@ function App() {
         return;
       }
 
-      setPtResult(json);
+      updateScoreList(json);
     } catch (err) {
       console.error("JSON invalide", err);
     }
   };
 
   const getNbOfResults = (resultName: string) =>
-    ptResults.filter((r) => r.test == resultName).length;
+    scoreList.filter((r) => r.test == resultName).length;
 
   const handleOnTestClick = (t: TestResult) => setSelectedResult(t);
   const clearSelectedResult = () => setSelectedResult(undefined);
 
   const handleOnSaveClick = () =>
-    window.localStorage.setItem("results", JSON.stringify(ptResults));
+    window.localStorage.setItem("results", JSON.stringify(scoreList));
+
+  const toggleMean = () => setShowMean((old) => !old);
 
   if (selectedResult)
     return (
@@ -96,7 +80,7 @@ function App() {
               {
                 curve: "step",
                 showMark: false,
-                data: ptResults
+                data: scoreList
                   .filter((r) => r.test == selectedResult.test)
                   .map((r) => r.stanine),
               },
@@ -127,7 +111,8 @@ function App() {
         >
           Importer un fichier JSON
         </Button>
-        {!ptResults.length || (
+
+        {!scoreList.length || (
           <Button
             color="primary"
             variant="contained"
@@ -138,10 +123,17 @@ function App() {
           </Button>
         )}
       </>
+      <Stack direction={"row"} alignItems={"center"}>
+        <Typography>Moyenne</Typography>
+        <Switch value={showMean} onClick={toggleMean} />
+        <Typography>Meilleur résultat</Typography>
+      </Stack>
+
+      <Typography>{scoreList.length} Résultats </Typography>
       <PtResultList
         nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
         onClick={handleOnTestClick}
-        ptResults={filterByHighestStanine()}
+        ptResults={showMean ? meanStanineList : highestStanineList}
       />
     </PageBloc>
   );

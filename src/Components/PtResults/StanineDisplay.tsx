@@ -24,20 +24,35 @@ function StanineDisplay(props: Props) {
     return colors[stanine - 1] ?? "#9e9e9e"; // fallback gris
   };
 
+  const fixedStanine = parseInt(stanine.toFixed(0));
+
   return (
     <Stack direction={"row"} spacing={2} p={2} mt={1}>
-      {numbers.map((n) => (
-        <Box
-          key={n}
-          sx={{
-            fontSize: stanine == n ? 36 : 12,
-            alignSelf: "center",
-            color: stanine == n ? getStanineColor(n) : "inherit",
-          }}
-        >
-          {n}
-        </Box>
-      ))}
+      {numbers.map((n) =>
+        Math.trunc(stanine) == n ? (
+          <Box
+            key={n}
+            sx={{
+              fontSize: 36,
+              alignSelf: "center",
+              color: getStanineColor(n),
+            }}
+          >
+            {stanine.toFixed(1)}
+          </Box>
+        ) : (
+          <Box
+            key={n}
+            sx={{
+              fontSize: 12,
+              alignSelf: "center",
+              color: "inherit",
+            }}
+          >
+            {n}
+          </Box>
+        )
+      )}
     </Stack>
   );
 }
