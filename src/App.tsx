@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
@@ -7,7 +7,7 @@ import "@fontsource/roboto/700.css";
 import PageBloc from "./Components/Shared/PageBloc";
 import PtResultList from "./Components/PtResults/PtResultList";
 import type { TestResult } from "./types/testRestult";
-import { Box, Button, Stack, Switch, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";

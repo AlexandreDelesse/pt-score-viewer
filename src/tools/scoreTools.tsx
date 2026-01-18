@@ -33,7 +33,7 @@ export const meanStanineOnLastFive = (scoreList: TestResult[]) => {
   return sortScoreList(meanStanine);
 };
 
-export const getMeanOnLastN = (list: TestResult, n: number) => {
+export const getMeanOnLastN = (list: TestResult, _n: number) => {
   //TODO: Implement
   return list;
 };
@@ -51,12 +51,12 @@ export const getStanineStreak = (
   return streak;
 };
 
-export const limitLastN = (list: TestResult, n: number) => {
+export const limitLastN = (_list: TestResult, _n: number) => {
   //TODO: Implement
   return [];
 };
 
-export const computeMean = (list: number[]) => {
+export const computeMean = (_list: number[]) => {
   //TODO: Implement
   return 0;
 };

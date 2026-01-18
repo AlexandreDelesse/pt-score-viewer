@@ -3,7 +3,6 @@ import {
   Box,
   Card,
   CardActionArea,
-  Divider,
   Stack,
   Typography,
 } from "@mui/material";
