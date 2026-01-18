@@ -11,8 +11,9 @@ import { Box, Button, Stack, Switch, Typography } from "@mui/material";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";
-import { LineChart } from "@mui/x-charts";
+import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
 import useScoreService from "./services/useScoreService";
+import { green } from "@mui/material/colors";
 
 function App() {
   const { scoreList, meanStanineList, updateScoreList, getStreak } =
@@ -82,7 +83,13 @@ function App() {
               },
             ]}
             height={400}
-          />
+          >
+            <ChartsReferenceLine
+              y={7}
+              label="Objectif Classe 7"
+              lineStyle={{ stroke: green[400], strokeWidth: 2 }}
+            />
+          </LineChart>
         </Box>
       </PageBloc>
     );
