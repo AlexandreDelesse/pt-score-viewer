@@ -14,9 +14,10 @@ import Save from "@mui/icons-material/Save";
 import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
 import useScoreService from "./services/useScoreService";
 import { green } from "@mui/material/colors";
+import PtResultNbResume from "./Components/PtResults/PtResultNbResume";
 
 function App() {
-  const { scoreList, meanStanineList, updateScoreList, getStreak } =
+  const { scoreList, meanStanineList, updateScoreList, getStreak, totalResume } =
     useScoreService();
   const [selectedResult, setSelectedResult] = useState<TestResult>();
 
@@ -127,7 +128,11 @@ function App() {
         )}
       </>
 
-      <Typography>{scoreList.length} Résultats </Typography>
+      <PtResultNbResume
+        totalResults={totalResume.totalScore}
+        totalDayResult={totalResume.totalTodayScore}
+        totalWeekResult={totalResume.totalWeekScore}
+      />
       <PtResultList
         nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
         onClick={handleOnTestClick}
