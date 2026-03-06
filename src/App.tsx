@@ -7,7 +7,7 @@ import "@fontsource/roboto/700.css";
 import PageBloc from "./Components/Shared/PageBloc";
 import PtResultList from "./Components/PtResults/PtResultList";
 import type { TestResult } from "./types/testRestult";
-import { Box, Button, Typography } from "@mui/material";
+import { Alert, Box, Button, Typography } from "@mui/material";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";
@@ -20,6 +20,7 @@ function App() {
   const { scoreList, meanStanineList, updateScoreList, getStreak, totalResume } =
     useScoreService();
   const [selectedResult, setSelectedResult] = useState<TestResult>();
+  const [importError, setImportError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null); // TODO: A placer dans un composant file picker
 
@@ -33,24 +34,25 @@ function App() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setImportError(null);
     const text = await file.text();
     // const date = file.lastModified
     try {
       const json = JSON.parse(text);
 
       if (!Array.isArray(json)) {
-        console.error("Le fichier JSON doit contenir une liste.");
+        setImportError("Le fichier JSON doit contenir une liste.");
         return;
       }
 
       updateScoreList(json);
-    } catch (err) {
-      console.error("JSON invalide", err);
+    } catch {
+      setImportError("Fichier JSON invalide.");
     }
   };
 
   const getNbOfResults = (resultName: string) =>
-    scoreList.filter((r) => r.test == resultName).length;
+    scoreList.filter((r) => r.test === resultName).length;
 
   const handleOnTestClick = (t: TestResult) => setSelectedResult(t);
   const clearSelectedResult = () => setSelectedResult(undefined);
@@ -79,7 +81,7 @@ function App() {
                 curve: "step",
                 showMark: false,
                 data: scoreList
-                  .filter((r) => r.test == selectedResult.test)
+                  .filter((r) => r.test === selectedResult.test)
                   .map((r) => r.stanine),
               },
             ]}
@@ -115,6 +117,12 @@ function App() {
         >
           Importer un fichier JSON
         </Button>
+
+        {importError && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            {importError}
+          </Alert>
+        )}
 
         {!scoreList.length || (
           <Button

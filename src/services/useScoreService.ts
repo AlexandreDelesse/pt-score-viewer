@@ -10,14 +10,22 @@ export default function useScoreService() {
   const [scoreList, setScoreList] = useState<TestResult[]>([]);
 
   useEffect(() => {
-    const r = window.localStorage.getItem("results") || "[]";
-    setScoreList(JSON.parse(r));
+    try {
+      const raw = window.localStorage.getItem("results");
+      if (!raw) return;
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setScoreList(parsed as TestResult[]);
+      }
+    } catch {
+      window.localStorage.removeItem("results");
+    }
   }, []);
 
   const updateScoreList = (list: TestResult[]) => setScoreList(list);
 
   const getStreak = (test: string) =>
-    getStanineStreak(scoreList.filter((e) => e.test == test));
+    getStanineStreak(scoreList.filter((e) => e.test === test));
 
   const dateDict = {
     janvier: 0,
@@ -81,7 +89,7 @@ export default function useScoreService() {
         parseInt(year),
         dateDict[month.toLocaleLowerCase() as MonthKey],
         parseInt(day),
-      ).getDate() == new Date().getDate()
+      ).getDate() === new Date().getDate()
     );
   }).length;
   const totalWeekScore = scoreList.filter((s) =>
