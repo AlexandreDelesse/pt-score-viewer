@@ -3,7 +3,7 @@ import type { TestResult } from "../types/testRestult";
 export const filterByHighestStanine = (scoreList: TestResult[]) => {
   let stanineFiltered: TestResult[] = [];
   scoreList.forEach((s: TestResult) => {
-    let curStan = stanineFiltered.find((t) => t.test === s.test);
+    const curStan = stanineFiltered.find((t) => t.test === s.test);
     if (!curStan) stanineFiltered = [...stanineFiltered, s];
     else {
       if (curStan.stanine < s.stanine) {
@@ -55,10 +55,120 @@ export const limitLastN = (_list: TestResult, _n: number) => {
   return [];
 };
 
-export const computeMean = (_list: number[]) => {
-  //TODO: Implement
-  return 0;
+export const computeMean = (list: number[]): number => {
+  if (!list.length) return 0;
+  return list.reduce((sum, v) => sum + v, 0) / list.length;
 };
 
 export const sortScoreList = (list: TestResult[]) =>
   list.sort((a, b) => a.stanine - b.stanine);
+
+// --- Trend ---
+
+export const computeTrend = (scoreList: TestResult[]): number => {
+  const last3 = scoreList.slice(-3).map((r) => r.stanine);
+  const prev3 = scoreList.slice(-6, -3).map((r) => r.stanine);
+  if (!last3.length || !prev3.length) return 0;
+  return computeMean(last3) - computeMean(prev3);
+};
+
+export const buildTrendMap = (
+  scoreList: TestResult[]
+): Record<string, number> => {
+  const testNames = [...new Set(scoreList.map((r) => r.test))];
+  const map: Record<string, number> = {};
+  testNames.forEach((name) => {
+    const forTest = scoreList.filter((r) => r.test === name);
+    map[name] = computeTrend(forTest);
+  });
+  return map;
+};
+
+// --- Work on list ---
+
+export type WorkOnEntry = {
+  test: string;
+  meanStanine: number;
+  streak: number;
+  label: "Insuffisant" | "À améliorer" | "Proche de l'objectif";
+};
+
+export const getWorkOnList = (
+  scoreList: TestResult[],
+  getStreak: (test: string) => number,
+  max: number = 5
+): WorkOnEntry[] => {
+  const testNames = [...new Set(scoreList.map((r) => r.test))];
+
+  const entries: WorkOnEntry[] = testNames
+    .map((name) => {
+      const forTest = scoreList.filter((r) => r.test === name);
+      const lastFive = forTest.slice(-5).map((r) => r.stanine);
+      const mean = computeMean(lastFive);
+      const streak = getStreak(name);
+
+      let label: WorkOnEntry["label"];
+      if (mean < 5) label = "Insuffisant";
+      else if (mean < 6) label = "À améliorer";
+      else label = "Proche de l'objectif";
+
+      return { test: name, meanStanine: mean, streak, label };
+    })
+    .filter((e) => e.meanStanine < 7);
+
+  entries.sort((a, b) =>
+    a.meanStanine !== b.meanStanine
+      ? a.meanStanine - b.meanStanine
+      : a.streak - b.streak
+  );
+
+  return entries.slice(0, max);
+};
+
+// --- Sort & filter ---
+
+export type SortOption =
+  | "stanine_asc"
+  | "stanine_desc"
+  | "count_desc"
+  | "count_asc"
+  | "trend_pos"
+  | "trend_neg";
+
+export type FilterOption = "all" | "work_on" | "mastered";
+
+export const sortAndFilterResults = (
+  meanStanineList: TestResult[],
+  getNbOfTest: (name: string) => number,
+  trendMap: Record<string, number>,
+  sort: SortOption,
+  filter: FilterOption
+): TestResult[] => {
+  let list = [...meanStanineList];
+
+  if (filter === "work_on") list = list.filter((r) => r.stanine < 7);
+  if (filter === "mastered") list = list.filter((r) => r.stanine >= 7);
+
+  switch (sort) {
+    case "stanine_asc":
+      list.sort((a, b) => a.stanine - b.stanine);
+      break;
+    case "stanine_desc":
+      list.sort((a, b) => b.stanine - a.stanine);
+      break;
+    case "count_desc":
+      list.sort((a, b) => getNbOfTest(b.test) - getNbOfTest(a.test));
+      break;
+    case "count_asc":
+      list.sort((a, b) => getNbOfTest(a.test) - getNbOfTest(b.test));
+      break;
+    case "trend_pos":
+      list.sort((a, b) => (trendMap[b.test] ?? 0) - (trendMap[a.test] ?? 0));
+      break;
+    case "trend_neg":
+      list.sort((a, b) => (trendMap[a.test] ?? 0) - (trendMap[b.test] ?? 0));
+      break;
+  }
+
+  return list;
+};

@@ -15,9 +15,10 @@ import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
 import useScoreService from "./services/useScoreService";
 import { green } from "@mui/material/colors";
 import PtResultNbResume from "./Components/PtResults/PtResultNbResume";
+import WorkOnPanel from "./Components/PtResults/WorkOnPanel";
 
 function App() {
-  const { scoreList, meanStanineList, updateScoreList, getStreak, totalResume } =
+  const { scoreList, meanStanineList, updateScoreList, getStreak, totalResume, workOnList, trendMap } =
     useScoreService();
   const [selectedResult, setSelectedResult] = useState<TestResult>();
   const [importError, setImportError] = useState<string | null>(null);
@@ -141,11 +142,13 @@ function App() {
         totalDayResult={totalResume.totalTodayScore}
         totalWeekResult={totalResume.totalWeekScore}
       />
+      <WorkOnPanel entries={workOnList} />
       <PtResultList
         nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
         onClick={handleOnTestClick}
         ptResults={meanStanineList}
         getStreak={getStreak} //TODO: Pas propre du tout ! a fair eévoluer !
+        trendMap={trendMap}
       />
     </PageBloc>
   );

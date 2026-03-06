@@ -4,6 +4,8 @@ import {
   filterByHighestStanine,
   getStanineStreak,
   meanStanineOnLastFive,
+  getWorkOnList,
+  buildTrendMap,
 } from "../tools/scoreTools";
 
 export default function useScoreService() {
@@ -103,5 +105,7 @@ export default function useScoreService() {
     updateScoreList,
     getStreak,
     totalResume: { totalScore, totalTodayScore, totalWeekScore },
+    workOnList: getWorkOnList(scoreList, getStreak),
+    trendMap: buildTrendMap(scoreList),
   };
 }
