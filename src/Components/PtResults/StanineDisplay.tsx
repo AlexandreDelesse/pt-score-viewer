@@ -27,7 +27,7 @@ function StanineDisplay(props: Props) {
   const fixedStanine = parseInt(stanine.toFixed(0));
 
   return (
-    <Stack direction={"row"} spacing={2} p={2} mt={1}>
+    <Stack direction={"row"} spacing={{ xs: 1, sm: 2 }} p={{ xs: 1, sm: 2 }} mt={1}>
       {numbers.map((n) =>
         fixedStanine == n ? (
           <Box

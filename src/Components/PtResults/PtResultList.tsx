@@ -90,13 +90,14 @@ function PtResultList(props: Props) {
 
       <Grid container spacing={2}>
         {displayList.map((i) => (
-          <PtResultListItem
-            nbOfTest={nbOfTest(i.test)}
-            onClick={onClick}
-            test={i}
-            key={i.test + i.at}
-            streak={getStreak(i.test)}
-          />
+          <Grid key={i.test + i.at} size={{ xs: 12, sm: 6, lg: 4 }}>
+            <PtResultListItem
+              nbOfTest={nbOfTest(i.test)}
+              onClick={onClick}
+              test={i}
+              streak={getStreak(i.test)}
+            />
+          </Grid>
         ))}
       </Grid>
     </>

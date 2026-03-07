@@ -7,7 +7,7 @@ import "@fontsource/roboto/700.css";
 import PageBloc from "./Components/Shared/PageBloc";
 import PtResultList from "./Components/PtResults/PtResultList";
 import type { TestResult } from "./types/testRestult";
-import { Alert, Box, Button, Typography } from "@mui/material";
+import { Alert, Box, Button, Typography, useMediaQuery, useTheme } from "@mui/material";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";
@@ -20,6 +20,8 @@ import WorkOnPanel from "./Components/PtResults/WorkOnPanel";
 function App() {
   const { scoreList, meanStanineList, updateScoreList, getStreak, totalResume, workOnList, trendMap } =
     useScoreService();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [selectedResult, setSelectedResult] = useState<TestResult>();
   const [importError, setImportError] = useState<string | null>(null);
 
@@ -65,7 +67,7 @@ function App() {
     return (
       <PageBloc>
         <Button onClick={clearSelectedResult}>Retour</Button>
-        <Typography my={2} textAlign={"center"} variant="h2" fontSize={32}>
+        <Typography my={2} textAlign={"center"} variant="h2" fontSize={{ xs: 22, md: 32 }}>
           {selectedResult.test}
         </Typography>
         <Box mt={1}>
@@ -86,7 +88,7 @@ function App() {
                   .map((r) => r.stanine),
               },
             ]}
-            height={400}
+            height={isMobile ? 260 : 400}
           >
             <ChartsReferenceLine
               y={7}

@@ -22,7 +22,7 @@ function PtResultListItem(props: Props) {
   const handleOnClick = () => onClick(test);
 
   return (
-    <Card sx={{ bgcolor: "whitesmoke", width: 350 }}>
+    <Card sx={{ bgcolor: "whitesmoke", width: "100%" }}>
       <CardActionArea sx={{ p: 2 }} onClick={handleOnClick}>
         <Box display="flex" justifyContent="space-between">
           <Box>
