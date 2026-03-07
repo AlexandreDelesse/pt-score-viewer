@@ -7,7 +7,14 @@ import "@fontsource/roboto/700.css";
 import PageBloc from "./Components/Shared/PageBloc";
 import PtResultList from "./Components/PtResults/PtResultList";
 import type { TestResult } from "./types/testRestult";
-import { Alert, Box, Button, Typography, useMediaQuery, useTheme } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";
@@ -17,9 +24,20 @@ import { green } from "@mui/material/colors";
 import PtResultNbResume from "./Components/PtResults/PtResultNbResume";
 import WorkOnPanel from "./Components/PtResults/WorkOnPanel";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 function App() {
-  const { scoreList, meanStanineList, updateScoreList, getStreak, totalResume, workOnList, trendMap } =
-    useScoreService();
+  const {
+    scoreList,
+    meanStanineList,
+    updateScoreList,
+    getStreak,
+    totalResume,
+    workOnList,
+    trendMap,
+  } = useScoreService();
+  const queryClient = new QueryClient();
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [selectedResult, setSelectedResult] = useState<TestResult>();
@@ -63,96 +81,107 @@ function App() {
   const handleOnSaveClick = () =>
     window.localStorage.setItem("results", JSON.stringify(scoreList));
 
+
+
   if (selectedResult)
     return (
-      <PageBloc>
-        <Button onClick={clearSelectedResult}>Retour</Button>
-        <Typography my={2} textAlign={"center"} variant="h2" fontSize={{ xs: 22, md: 32 }}>
-          {selectedResult.test}
-        </Typography>
-        <Box mt={1}>
-          <LineChart
-            grid={{ horizontal: true }}
-            yAxis={[
-              {
-                min: 1,
-                max: 9,
-              },
-            ]}
-            series={[
-              {
-                curve: "step",
-                showMark: false,
-                data: scoreList
-                  .filter((r) => r.test === selectedResult.test)
-                  .map((r) => r.stanine),
-              },
-            ]}
-            height={isMobile ? 260 : 400}
+      <QueryClientProvider client={queryClient}>
+        <PageBloc>
+          <Button onClick={clearSelectedResult}>Retour</Button>
+          <Typography
+            my={2}
+            textAlign={"center"}
+            variant="h2"
+            fontSize={{ xs: 22, md: 32 }}
           >
-            <ChartsReferenceLine
-              y={7}
-              label="Objectif Classe 7"
-              lineStyle={{ stroke: green[400], strokeWidth: 2 }}
-            />
-          </LineChart>
-        </Box>
-      </PageBloc>
+            {selectedResult.test}
+          </Typography>
+          <Box mt={1}>
+            <LineChart
+              grid={{ horizontal: true }}
+              yAxis={[
+                {
+                  min: 1,
+                  max: 9,
+                },
+              ]}
+              series={[
+                {
+                  curve: "step",
+                  showMark: false,
+                  data: scoreList
+                    .filter((r) => r.test === selectedResult.test)
+                    .map((r) => r.stanine),
+                },
+              ]}
+              height={isMobile ? 260 : 400}
+            >
+              <ChartsReferenceLine
+                y={7}
+                label="Objectif Classe 7"
+                lineStyle={{ stroke: green[400], strokeWidth: 2 }}
+              />
+            </LineChart>
+          </Box>
+        </PageBloc>
+      </QueryClientProvider>
     );
 
   return (
-    <PageBloc>
-      <>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          style={{ display: "none" }}
-          onChange={handleFileUpload}
-        />
+    <QueryClientProvider client={queryClient}>
+      <PageBloc>
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            style={{ display: "none" }}
+            onChange={handleFileUpload}
+          />
 
-        <Button
-          sx={{ my: 2 }}
-          variant="contained"
-          color="primary"
-          startIcon={<UploadFileIcon />}
-          onClick={handleClick}
-        >
-          Importer un fichier JSON
-        </Button>
-
-        {importError && (
-          <Alert severity="error" sx={{ mt: 1 }}>
-            {importError}
-          </Alert>
-        )}
-
-        {!scoreList.length || (
           <Button
-            color="primary"
+            sx={{ my: 2 }}
             variant="contained"
-            sx={{ ml: 1 }}
-            onClick={handleOnSaveClick}
+            color="primary"
+            startIcon={<UploadFileIcon />}
+            onClick={handleClick}
           >
-            <Save />
+            Importer un fichier JSON
           </Button>
-        )}
-      </>
 
-      <PtResultNbResume
-        totalResults={totalResume.totalScore}
-        totalDayResult={totalResume.totalTodayScore}
-        totalWeekResult={totalResume.totalWeekScore}
-      />
-      <WorkOnPanel entries={workOnList} />
-      <PtResultList
-        nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
-        onClick={handleOnTestClick}
-        ptResults={meanStanineList}
-        getStreak={getStreak} //TODO: Pas propre du tout ! a fair eévoluer !
-        trendMap={trendMap}
-      />
-    </PageBloc>
+          {importError && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {importError}
+            </Alert>
+          )}
+
+          {!scoreList.length || (
+            <Button
+              color="primary"
+              variant="contained"
+              sx={{ ml: 1 }}
+              onClick={handleOnSaveClick}
+            >
+              <Save />
+            </Button>
+          )}
+        </>
+
+        <PtResultNbResume
+          totalResults={totalResume.totalScore}
+          totalDayResult={totalResume.totalTodayScore}
+          totalWeekResult={totalResume.totalWeekScore}
+        />
+        <WorkOnPanel entries={workOnList} />
+        <PtResultList
+          nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
+          onClick={handleOnTestClick}
+          ptResults={meanStanineList}
+          getStreak={getStreak} //TODO: Pas propre du tout ! a fair eévoluer !
+          trendMap={trendMap}
+        />
+      </PageBloc>
+    </QueryClientProvider>
   );
 }
 
