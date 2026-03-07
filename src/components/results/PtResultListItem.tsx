@@ -14,8 +14,8 @@ interface Props {
 
 function PtResultListItem({ test, onClick, nbOfTest, streak = 0 }: Props) {
   return (
-    <Card sx={{ width: "100%" }}>
-      <CardActionArea sx={{ p: 2 }} onClick={() => onClick(test)}>
+    <Card sx={{ width: "100%", height: "100%" }}>
+      <CardActionArea sx={{ p: 2, height: "100%" }} onClick={() => onClick(test)}>
         <Box display="flex" justifyContent="space-between">
           <Box>
             <Typography fontWeight={500}>{test.test}</Typography>
