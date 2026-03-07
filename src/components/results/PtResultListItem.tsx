@@ -14,14 +14,18 @@ interface Props {
 
 function PtResultListItem({ test, onClick, nbOfTest, streak = 0 }: Props) {
   return (
-    <Card sx={{ bgcolor: "whitesmoke", width: "100%" }}>
+    <Card sx={{ width: "100%" }}>
       <CardActionArea sx={{ p: 2 }} onClick={() => onClick(test)}>
         <Box display="flex" justifyContent="space-between">
           <Box>
-            <Typography>{test.test}</Typography>
+            <Typography fontWeight={500}>{test.test}</Typography>
             <Stack direction="row" gap={1}>
-              <Typography>{nbOfTest} Results</Typography>
-              <Typography>best : {test.score}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {nbOfTest} résultats
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                best : {test.score}
+              </Typography>
             </Stack>
           </Box>
           <Stack direction="row" gap={0.5} alignItems="center">

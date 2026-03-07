@@ -6,7 +6,11 @@ interface Props {
 }
 
 function PageBloc({ children }: Props) {
-  return <Container>{children || <></>}</Container>;
+  return (
+    <Container maxWidth="md" sx={{ py: 3 }}>
+      {children || <></>}
+    </Container>
+  );
 }
 
 export default PageBloc;

@@ -1,6 +1,6 @@
 import { Button, Typography, Box, useMediaQuery, useTheme } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
-import { green } from "@mui/material/colors";
 import type { TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
 
@@ -16,7 +16,9 @@ export default function TestDetailPage({ testName, scores, onBack }: Props) {
 
   return (
     <PageBloc>
-      <Button onClick={onBack}>Retour</Button>
+      <Button onClick={onBack} startIcon={<ArrowBackIcon />} sx={{ mb: 1 }}>
+        Retour
+      </Button>
       <Typography
         my={2}
         textAlign="center"
@@ -41,7 +43,7 @@ export default function TestDetailPage({ testName, scores, onBack }: Props) {
           <ChartsReferenceLine
             y={7}
             label="Objectif Classe 7"
-            lineStyle={{ stroke: green[400], strokeWidth: 2 }}
+            lineStyle={{ stroke: theme.palette.success.main, strokeWidth: 2 }}
           />
         </LineChart>
       </Box>

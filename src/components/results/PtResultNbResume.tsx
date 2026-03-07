@@ -1,5 +1,4 @@
 import { Grid, Stack, Typography } from "@mui/material";
-import { blue } from "@mui/material/colors";
 
 interface Props {
   totalResults: number;
@@ -12,7 +11,7 @@ function PtResultNbResume({ totalDayResult, totalResults, totalWeekResult }: Pro
     <Grid size={4}>
       <Stack textAlign="center">
         <Typography variant="caption">{title}</Typography>
-        <Typography color={blue[500]} fontSize={32}>
+        <Typography color="primary" fontSize={32} fontWeight={300}>
           {result}
         </Typography>
       </Stack>
