@@ -1,20 +1,12 @@
 import { useState } from "react";
-import {
-  Box,
-  Chip,
-  Grid,
-  MenuItem,
-  Select,
-  Stack,
-  Typography,
-} from "@mui/material";
-import type { TestResult } from "../../types/testRestult";
+import { Box, Chip, Grid, MenuItem, Select, Stack, Typography } from "@mui/material";
+import type { TestResult } from "../../types/testResult";
 import PtResultListItem from "./PtResultListItem";
 import {
   sortAndFilterResults,
   type FilterOption,
   type SortOption,
-} from "../../tools/scoreTools";
+} from "../../utils/scoreTools";
 
 interface Props {
   ptResults: TestResult[];
@@ -32,37 +24,24 @@ const FILTER_LABELS: Record<FilterOption, string> = {
 
 const FILTERS: FilterOption[] = ["all", "work_on", "mastered"];
 
-function PtResultList(props: Props) {
-  const { ptResults, onClick, nbOfTest, getStreak, trendMap } = props;
+function PtResultList({ ptResults, onClick, nbOfTest, getStreak, trendMap }: Props) {
   const [sort, setSort] = useState<SortOption>("stanine_asc");
   const [filter, setFilter] = useState<FilterOption>("all");
 
   if (!ptResults.length)
     return (
       <Box mt={5}>
-        <Typography textAlign={"center"}>
+        <Typography textAlign="center">
           Importer un fichier JSON PiloteTest pour afficher les résultats !
         </Typography>
       </Box>
     );
 
-  const displayList = sortAndFilterResults(
-    ptResults,
-    nbOfTest,
-    trendMap,
-    sort,
-    filter
-  );
+  const displayList = sortAndFilterResults(ptResults, nbOfTest, trendMap, sort, filter);
 
   return (
     <>
-      <Stack
-        direction="row"
-        flexWrap="wrap"
-        gap={1}
-        alignItems="center"
-        mb={2}
-      >
+      <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" mb={2}>
         {FILTERS.map((f) => (
           <Chip
             key={f}
@@ -72,7 +51,6 @@ function PtResultList(props: Props) {
             color={filter === f ? "primary" : "default"}
           />
         ))}
-
         <Select
           size="small"
           value={sort}
@@ -87,7 +65,6 @@ function PtResultList(props: Props) {
           <MenuItem value="trend_neg">Tendance négative</MenuItem>
         </Select>
       </Stack>
-
       <Grid container spacing={2}>
         {displayList.map((i) => (
           <Grid key={i.test + i.at} size={{ xs: 12, sm: 6, lg: 4 }}>

@@ -4,11 +4,10 @@ interface Props {
   stanine: number;
 }
 
-function StanineDisplay(props: Props) {
-  const { stanine } = props;
+function StanineDisplay({ stanine }: Props) {
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-  const getStanineColor = (stanine: number) => {
+  const getStanineColor = (n: number) => {
     const colors = [
       "#b33939", // 1 - Rouge mat
       "#cd533b", // 2
@@ -20,35 +19,20 @@ function StanineDisplay(props: Props) {
       "#3e7c59", // 8 - Vert foncé mat
       "#2d5d4d", // 9 - Vert sapin profond
     ];
-
-    return colors[stanine - 1] ?? "#9e9e9e"; // fallback gris
+    return colors[n - 1] ?? "#9e9e9e";
   };
 
   const fixedStanine = parseInt(stanine.toFixed(0));
 
   return (
-    <Stack direction={"row"} spacing={{ xs: 1, sm: 2 }} p={{ xs: 1, sm: 2 }} mt={1}>
+    <Stack direction="row" spacing={{ xs: 1, sm: 2 }} p={{ xs: 1, sm: 2 }} mt={1}>
       {numbers.map((n) =>
-        fixedStanine == n ? (
-          <Box
-            key={n}
-            sx={{
-              fontSize: 36,
-              alignSelf: "center",
-              color: getStanineColor(n),
-            }}
-          >
+        fixedStanine === n ? (
+          <Box key={n} sx={{ fontSize: 36, alignSelf: "center", color: getStanineColor(n) }}>
             {fixedStanine}
           </Box>
         ) : (
-          <Box
-            key={n}
-            sx={{
-              fontSize: 12,
-              alignSelf: "center",
-              color: "inherit",
-            }}
-          >
+          <Box key={n} sx={{ fontSize: 12, alignSelf: "center", color: "inherit" }}>
             {n}
           </Box>
         )

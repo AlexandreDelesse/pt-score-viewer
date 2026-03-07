@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { TestResult } from "../types/testRestult";
+import type { TestResult } from "../types/testResult";
 
 const SERVER = "http://localhost:5000";
 

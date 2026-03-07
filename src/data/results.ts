@@ -1,4 +1,4 @@
-import type { TestResult } from "../types/testRestult";
+import type { TestResult } from "../types/testResult";
 
 export const results: TestResult[] = [
   {

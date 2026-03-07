@@ -7,13 +7,11 @@ interface Props {
   totalDayResult: number;
 }
 
-function PtResultNbResume(props: Props) {
-  const { totalDayResult, totalResults, totalWeekResult } = props;
-
+function PtResultNbResume({ totalDayResult, totalResults, totalWeekResult }: Props) {
   const formatResult = (title: string, result: number) => (
     <Grid size={4}>
-      <Stack textAlign={"center"}>
-        <Typography variant="caption">{title} </Typography>
+      <Stack textAlign="center">
+        <Typography variant="caption">{title}</Typography>
         <Typography color={blue[500]} fontSize={32}>
           {result}
         </Typography>

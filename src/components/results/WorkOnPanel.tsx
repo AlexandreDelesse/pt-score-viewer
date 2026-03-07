@@ -9,12 +9,9 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
-import type { WorkOnEntry } from "../../tools/scoreTools";
+import type { WorkOnEntry } from "../../utils/scoreTools";
 
-const labelColor: Record<
-  WorkOnEntry["label"],
-  "error" | "warning" | "info"
-> = {
+const labelColor: Record<WorkOnEntry["label"], "error" | "warning" | "info"> = {
   Insuffisant: "error",
   "À améliorer": "warning",
   "Proche de l'objectif": "info",
@@ -50,11 +47,7 @@ function WorkOnPanel({ entries }: Props) {
                 <Typography variant="body2" color="text.secondary">
                   {e.meanStanine.toFixed(1)} / 9
                 </Typography>
-                <Chip
-                  label={e.label}
-                  size="small"
-                  color={labelColor[e.label]}
-                />
+                <Chip label={e.label} size="small" color={labelColor[e.label]} />
               </Stack>
             </Box>
           ))}
