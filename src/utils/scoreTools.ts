@@ -172,3 +172,12 @@ export const sortAndFilterResults = (
 
   return list;
 };
+
+// --- Pilotest URL ---
+
+export const testNameToSlug = (name: string): string =>
+  name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ /g, "_");

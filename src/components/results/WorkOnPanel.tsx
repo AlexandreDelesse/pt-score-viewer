@@ -4,12 +4,14 @@ import {
   AccordionSummary,
   Box,
   Chip,
+  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
-import type { WorkOnEntry } from "../../utils/scoreTools";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { type WorkOnEntry, testNameToSlug } from "../../utils/scoreTools";
 
 const labelColor: Record<WorkOnEntry["label"], "error" | "warning" | "info"> = {
   Insuffisant: "error",
@@ -48,6 +50,15 @@ function WorkOnPanel({ entries }: Props) {
                   {e.meanStanine.toFixed(1)} / 9
                 </Typography>
                 <Chip label={e.label} size="small" color={labelColor[e.label]} />
+                <IconButton
+                  size="small"
+                  component="a"
+                  href={`https://www.pilotest.com/fr/tests/${testNameToSlug(e.test)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
               </Stack>
             </Box>
           ))}

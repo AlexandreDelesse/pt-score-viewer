@@ -1,7 +1,9 @@
 import type { TestResult } from "../../types/testResult";
-import { Box, Card, CardActionArea, Stack, Typography } from "@mui/material";
+import { Box, Card, CardActionArea, IconButton, Stack, Typography } from "@mui/material";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import StanineDisplay from "./StanineDisplay";
 import ScoreStreak from "../shared/ScoreStreak";
+import { testNameToSlug } from "../../utils/scoreTools";
 
 interface Props {
   test: TestResult;
@@ -22,7 +24,19 @@ function PtResultListItem({ test, onClick, nbOfTest, streak = 0 }: Props) {
               <Typography>best : {test.score}</Typography>
             </Stack>
           </Box>
-          <ScoreStreak streak={streak} />
+          <Stack direction="row" gap={0.5} alignItems="center">
+            <ScoreStreak streak={streak} />
+            <IconButton
+              size="small"
+              component="a"
+              href={`https://www.pilotest.com/fr/tests/${testNameToSlug(test.test)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <OpenInNewIcon fontSize="small" />
+            </IconButton>
+          </Stack>
         </Box>
         <StanineDisplay stanine={test.stanine} />
         <Typography variant="caption">{test.at}</Typography>
