@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
@@ -11,6 +11,13 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -18,15 +25,20 @@ import {
 
 import UploadFileIcon from "@mui/icons-material/UploadFile"; //TODO: A placer dans un file picker.
 import Save from "@mui/icons-material/Save";
+import SyncIcon from "@mui/icons-material/Sync";
 import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
 import useScoreService from "./services/useScoreService";
 import { green } from "@mui/material/colors";
 import PtResultNbResume from "./Components/PtResults/PtResultNbResume";
 import WorkOnPanel from "./Components/PtResults/WorkOnPanel";
+import usePilotestSync from "./services/usePilotestSync";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-function App() {
+// QueryClient créé en dehors du composant pour ne pas être recréé à chaque render
+const queryClient = new QueryClient();
+
+function AppContent() {
   const {
     scoreList,
     meanStanineList,
@@ -36,14 +48,32 @@ function App() {
     workOnList,
     trendMap,
   } = useScoreService();
-  const queryClient = new QueryClient();
+
+  const {
+    results: syncedResults,
+    isSyncing,
+    serverDown,
+    configure,
+    error: syncError,
+    updatedAt,
+  } = usePilotestSync();
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [selectedResult, setSelectedResult] = useState<TestResult>();
   const [importError, setImportError] = useState<string | null>(null);
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null); // TODO: A placer dans un composant file picker
+
+  // Quand la sync ramène des résultats, on met à jour la liste
+  useEffect(() => {
+    if (syncedResults?.length) {
+      updateScoreList(syncedResults);
+    }
+  }, [syncedResults]);
 
   // TODO: A placer dans un composant file picker
   const handleClick = () => {
@@ -57,7 +87,6 @@ function App() {
 
     setImportError(null);
     const text = await file.text();
-    // const date = file.lastModified
     try {
       const json = JSON.parse(text);
 
@@ -81,66 +110,63 @@ function App() {
   const handleOnSaveClick = () =>
     window.localStorage.setItem("results", JSON.stringify(scoreList));
 
-
+  const handleSyncSubmit = () => {
+    configure(email, password);
+    setSyncDialogOpen(false);
+    setEmail("");
+    setPassword("");
+  };
 
   if (selectedResult)
     return (
-      <QueryClientProvider client={queryClient}>
-        <PageBloc>
-          <Button onClick={clearSelectedResult}>Retour</Button>
-          <Typography
-            my={2}
-            textAlign={"center"}
-            variant="h2"
-            fontSize={{ xs: 22, md: 32 }}
+      <PageBloc>
+        <Button onClick={clearSelectedResult}>Retour</Button>
+        <Typography
+          my={2}
+          textAlign={"center"}
+          variant="h2"
+          fontSize={{ xs: 22, md: 32 }}
+        >
+          {selectedResult.test}
+        </Typography>
+        <Box mt={1}>
+          <LineChart
+            grid={{ horizontal: true }}
+            yAxis={[{ min: 1, max: 9 }]}
+            series={[
+              {
+                curve: "step",
+                showMark: false,
+                data: scoreList
+                  .filter((r) => r.test === selectedResult.test)
+                  .map((r) => r.stanine),
+              },
+            ]}
+            height={isMobile ? 260 : 400}
           >
-            {selectedResult.test}
-          </Typography>
-          <Box mt={1}>
-            <LineChart
-              grid={{ horizontal: true }}
-              yAxis={[
-                {
-                  min: 1,
-                  max: 9,
-                },
-              ]}
-              series={[
-                {
-                  curve: "step",
-                  showMark: false,
-                  data: scoreList
-                    .filter((r) => r.test === selectedResult.test)
-                    .map((r) => r.stanine),
-                },
-              ]}
-              height={isMobile ? 260 : 400}
-            >
-              <ChartsReferenceLine
-                y={7}
-                label="Objectif Classe 7"
-                lineStyle={{ stroke: green[400], strokeWidth: 2 }}
-              />
-            </LineChart>
-          </Box>
-        </PageBloc>
-      </QueryClientProvider>
+            <ChartsReferenceLine
+              y={7}
+              label="Objectif Classe 7"
+              lineStyle={{ stroke: green[400], strokeWidth: 2 }}
+            />
+          </LineChart>
+        </Box>
+      </PageBloc>
     );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <PageBloc>
-        <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            style={{ display: "none" }}
-            onChange={handleFileUpload}
-          />
+    <PageBloc>
+      <>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          style={{ display: "none" }}
+          onChange={handleFileUpload}
+        />
 
+        <Box display="flex" flexWrap="wrap" gap={1} my={2} alignItems="center">
           <Button
-            sx={{ my: 2 }}
             variant="contained"
             color="primary"
             startIcon={<UploadFileIcon />}
@@ -149,38 +175,129 @@ function App() {
             Importer un fichier JSON
           </Button>
 
-          {importError && (
-            <Alert severity="error" sx={{ mt: 1 }}>
-              {importError}
-            </Alert>
-          )}
-
           {!scoreList.length || (
             <Button
               color="primary"
               variant="contained"
-              sx={{ ml: 1 }}
               onClick={handleOnSaveClick}
             >
               <Save />
             </Button>
           )}
-        </>
 
-        <PtResultNbResume
-          totalResults={totalResume.totalScore}
-          totalDayResult={totalResume.totalTodayScore}
-          totalWeekResult={totalResume.totalWeekScore}
-        />
-        <WorkOnPanel entries={workOnList} />
-        <PtResultList
-          nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
-          onClick={handleOnTestClick}
-          ptResults={meanStanineList}
-          getStreak={getStreak} //TODO: Pas propre du tout ! a fair eévoluer !
-          trendMap={trendMap}
-        />
-      </PageBloc>
+          <Tooltip
+            title={
+              serverDown
+                ? "Serveur local indisponible (node server.js)"
+                : isSyncing
+                ? "Synchronisation en cours…"
+                : updatedAt
+                ? `Dernière sync : ${new Date(updatedAt).toLocaleString("fr-FR")}`
+                : "Synchroniser avec pilotest.com"
+            }
+          >
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={
+                  isSyncing ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <SyncIcon />
+                  )
+                }
+                disabled={serverDown ?? false}
+                onClick={() => setSyncDialogOpen(true)}
+              >
+                Sync
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+
+        {importError && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {importError}
+          </Alert>
+        )}
+
+        {syncError && (
+          <Alert severity="warning" sx={{ mb: 1 }}>
+            {syncError}
+          </Alert>
+        )}
+      </>
+
+      <PtResultNbResume
+        totalResults={totalResume.totalScore}
+        totalDayResult={totalResume.totalTodayScore}
+        totalWeekResult={totalResume.totalWeekScore}
+      />
+      <WorkOnPanel entries={workOnList} />
+      <PtResultList
+        nbOfTest={getNbOfResults} //TODO: Renomer et faire quelque chose de propre
+        onClick={handleOnTestClick}
+        ptResults={meanStanineList}
+        getStreak={getStreak} //TODO: Pas propre du tout ! a fair eévoluer !
+        trendMap={trendMap}
+      />
+
+      {/* Dialog de configuration de la sync */}
+      <Dialog
+        open={syncDialogOpen}
+        onClose={() => setSyncDialogOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Synchroniser pilotest.com</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Email"
+            type="email"
+            fullWidth
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
+            inputProps={{ autoComplete: "off" }}
+          />
+          <TextField
+            label="Mot de passe"
+            type="password"
+            fullWidth
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="off"
+            inputProps={{ autoComplete: "new-password" }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && email && password) handleSyncSubmit();
+            }}
+          />
+          <Alert severity="info" sx={{ mt: 1 }}>
+            Les identifiants sont transmis au serveur local uniquement. Ils ne
+            sont jamais stockés dans l&apos;appli.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSyncDialogOpen(false)}>Annuler</Button>
+          <Button
+            variant="contained"
+            onClick={handleSyncSubmit}
+            disabled={!email || !password}
+          >
+            Synchroniser
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </PageBloc>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
     </QueryClientProvider>
   );
 }

@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Serveur sync pilotest — données sensibles, ne jamais commiter
+config.json
+cache.json

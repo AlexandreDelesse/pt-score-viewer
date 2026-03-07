@@ -6,21 +6,11 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { TestResult } from "../types/testRestult";
 
 const SERVER = "http://localhost:5000";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface PilotestResult {
-  // Adapte ces champs au format exact exporté par pilotest.com
-  id:         number;
-  test_name:  string;
-  score:      number;
-  max_score:  number;
-  duration:   number;
-  created_at: string;
-  [key: string]: unknown; // champs supplémentaires éventuels
-}
 
 interface ServerStatus {
   configured:   boolean;
@@ -31,7 +21,7 @@ interface ServerStatus {
 }
 
 interface ResultsResponse {
-  results:    PilotestResult[];
+  results:    TestResult[];
   updated_at: string;
 }
 
@@ -89,7 +79,8 @@ export default function usePilotestSync() {
   const statusQuery = useQuery({
     queryKey: ["pilotest", "status"],
     queryFn:  api.status,
-    refetchInterval: (query) => query.state.data?.sync_running ? 3000 : false,
+    refetchInterval: (query: { state: { data?: ServerStatus } }) =>
+      query.state.data?.sync_running ? 3000 : false,
     retry: false,
   });
 
@@ -102,7 +93,7 @@ export default function usePilotestSync() {
     queryFn:   api.results,
     enabled:   isConfigured && !isSyncing,
     staleTime: 5 * 60 * 1000,
-    select:    (data) => data.results,
+    select:    (data: ResultsResponse) => data.results,
   });
 
   // Mutation : déclenche une sync manuelle

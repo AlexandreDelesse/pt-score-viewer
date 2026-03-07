@@ -209,14 +209,23 @@ async function doSync(email, password) {
 
 // ── HTTP Server ───────────────────────────────────────────────────────────────
 
-function cors(res) {
-  res.setHeader("Access-Control-Allow-Origin",  "*");
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173", // vite dev
+  "http://localhost:4173", // vite preview
+];
+
+function cors(res, req) {
+  const origin = req.headers.origin ?? "";
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
-function jsonRes(res, code, data) {
+function jsonRes(res, req, code, data) {
   const body = JSON.stringify(data, null, 2);
-  cors(res);
+  cors(res, req);
   res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" });
   res.end(body);
 }
@@ -231,12 +240,12 @@ async function readBody(req) {
 const server = http.createServer(async (req, res) => {
   const { pathname } = new URL(req.url, `http://localhost:${PORT}`);
 
-  if (req.method === "OPTIONS") { cors(res); res.writeHead(204); res.end(); return; }
+  if (req.method === "OPTIONS") { cors(res, req); res.writeHead(204); res.end(); return; }
 
   if (req.method === "GET" && pathname === "/status") {
     const cfg   = loadJSON(CONFIG_FILE) ?? {};
     const cache = loadCache();
-    return jsonRes(res, 200, {
+    return jsonRes(res, req, 200, {
       configured:   !!cfg.email,
       sync_running: syncState.running,
       last_error:   syncState.lastError ?? cache.error,
@@ -247,28 +256,28 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && pathname === "/results") {
     const cache = loadCache();
-    if (!cache.results) return jsonRes(res, 503, { error: "Aucun résultat en cache. Lancez /sync d'abord." });
-    return jsonRes(res, 200, { results: cache.results, updated_at: cache.updated_at });
+    if (!cache.results) return jsonRes(res, req, 503, { error: "Aucun résultat en cache. Lancez /sync d'abord." });
+    return jsonRes(res, req, 200, { results: cache.results, updated_at: cache.updated_at });
   }
 
   if (req.method === "POST" && pathname === "/configure") {
     const body = await readBody(req);
     if (!body.email || !body.password)
-      return jsonRes(res, 400, { error: "email et password requis" });
+      return jsonRes(res, req, 400, { error: "email et password requis" });
     saveJSON(CONFIG_FILE, { email: body.email, password: body.password });
     console.log(`[config] Sauvegardé pour ${body.email}`);
-    return jsonRes(res, 200, { ok: true, message: "Configuration sauvegardée" });
+    return jsonRes(res, req, 200, { ok: true, message: "Configuration sauvegardée" });
   }
 
   if (req.method === "POST" && pathname === "/sync") {
     const cfg = loadJSON(CONFIG_FILE);
-    if (!cfg?.email) return jsonRes(res, 400, { error: "Pas de config. Appelez POST /configure d'abord." });
-    if (syncState.running) return jsonRes(res, 200, { ok: true, message: "Sync déjà en cours…" });
+    if (!cfg?.email) return jsonRes(res, req, 400, { error: "Pas de config. Appelez POST /configure d'abord." });
+    if (syncState.running) return jsonRes(res, req, 200, { ok: true, message: "Sync déjà en cours…" });
     doSync(cfg.email, cfg.password);
-    return jsonRes(res, 202, { ok: true, message: "Sync démarrée en arrière-plan" });
+    return jsonRes(res, req, 202, { ok: true, message: "Sync démarrée en arrière-plan" });
   }
 
-  jsonRes(res, 404, { error: "Route inconnue" });
+  jsonRes(res, req, 404, { error: "Route inconnue" });
 });
 
 server.listen(PORT, "localhost", () => {
