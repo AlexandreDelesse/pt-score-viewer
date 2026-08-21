@@ -44,7 +44,12 @@ function WorkOnPanel({ entries }: Props) {
               alignItems="center"
               justifyContent="space-between"
             >
-              <Typography variant="body2">{e.test}</Typography>
+              <Box>
+                <Typography variant="body2">{e.test}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {e.reason}
+                </Typography>
+              </Box>
               <Stack direction="row" gap={1} alignItems="center">
                 <Typography variant="body2" color="text.secondary">
                   {e.meanStanine.toFixed(1)} / 9

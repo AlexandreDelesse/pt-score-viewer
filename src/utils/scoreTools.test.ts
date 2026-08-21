@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { TestResult } from "../types/testResult";
 import {
   getStanineStreak,
+  getWorkOnList,
   meanStanineOnLastFive,
   parseAtDate,
   isSameDay,
@@ -30,6 +31,45 @@ describe("Returns current streak", () => {
 
   it("returns current streak above threshold", () =>
     expect(getStanineStreak(mockData, 4)).toBe(7));
+});
+
+describe("getWorkOnList", () => {
+  const noStreak = () => 0;
+
+  const attempts = (test: string, n: number, stanine: number): TestResult[] =>
+    Array.from({ length: n }, () => ({ test, score: "", stanine, at: "" }));
+
+  it("ranks a confirmed weakness (many attempts) above a one-off low attempt at the same mean", () => {
+    const scoreList = [
+      ...attempts("Rarement tenté", 1, 3),
+      ...attempts("Souvent raté", 20, 3),
+    ];
+
+    const list = getWorkOnList(scoreList, noStreak);
+
+    expect(list.map((e) => e.test)).toEqual(["Souvent raté", "Rarement tenté"]);
+  });
+
+  it("still surfaces a low-attempt weak test instead of dropping it", () => {
+    const scoreList = attempts("Rarement tenté", 1, 3);
+
+    const list = getWorkOnList(scoreList, noStreak);
+
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({
+      test: "Rarement tenté",
+      nbAttempts: 1,
+      reason: "Encore peu de données (1 tentative)",
+    });
+  });
+
+  it("labels an attempt count at or above the confidence cap as a confirmed weakness", () => {
+    const scoreList = attempts("Souvent raté", 5, 3);
+
+    const list = getWorkOnList(scoreList, noStreak);
+
+    expect(list[0].reason).toBe("Faiblesse confirmée sur 5 tentatives");
+  });
 });
 
 describe("parseAtDate", () => {

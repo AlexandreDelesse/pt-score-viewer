@@ -33,7 +33,7 @@ export default function TestDetailPage({ testName, scores, onBack }: Props) {
           yAxis={[{ min: 1, max: 9 }]}
           series={[
             {
-              curve: "step",
+              curve: "linear",
               showMark: false,
               data: scores.map((r) => r.stanine),
             },

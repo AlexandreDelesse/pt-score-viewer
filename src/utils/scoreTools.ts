@@ -137,8 +137,22 @@ export type WorkOnEntry = {
   test: string;
   meanStanine: number;
   streak: number;
+  nbAttempts: number;
+  reason: string;
   label: "Insuffisant" | "À améliorer" | "Proche de l'objectif";
 };
+
+// Volume de pratique au-delà duquel une faiblesse est considérée "confirmée"
+// (cohérent avec la fenêtre "5 derniers" utilisée par meanStanineOnLastFive/lastFive).
+const CONFIDENCE_CAP = 5;
+// Bonus de priorité max pour une faiblesse confirmée par la répétition — additif,
+// pour ne jamais écraser la priorité (basée sur la sévérité) des tests peu tentés.
+const REPETITION_BOOST = 0.5;
+
+const getWorkOnReason = (nbAttempts: number): string =>
+  nbAttempts >= CONFIDENCE_CAP
+    ? `Faiblesse confirmée sur ${nbAttempts} tentatives`
+    : `Encore peu de données (${nbAttempts} tentative${nbAttempts > 1 ? "s" : ""})`;
 
 export const getWorkOnList = (
   scoreList: TestResult[],
@@ -147,9 +161,10 @@ export const getWorkOnList = (
 ): WorkOnEntry[] => {
   const testNames = [...new Set(scoreList.map((r) => r.test))];
 
-  const entries: WorkOnEntry[] = testNames
+  const ranked: { entry: WorkOnEntry; priority: number }[] = testNames
     .map((name) => {
       const forTest = scoreList.filter((r) => r.test === name);
+      const nbAttempts = forTest.length;
       const lastFive = forTest.slice(-5).map((r) => r.stanine);
       const mean = computeMean(lastFive);
       const streak = getStreak(name);
@@ -159,17 +174,29 @@ export const getWorkOnList = (
       else if (mean < 6) label = "À améliorer";
       else label = "Proche de l'objectif";
 
-      return { test: name, meanStanine: mean, streak, label };
-    })
-    .filter((e) => e.meanStanine < 7);
+      const severity = 7 - mean;
+      const confirmedWeaknessBoost =
+        (Math.min(nbAttempts, CONFIDENCE_CAP) / CONFIDENCE_CAP) * REPETITION_BOOST;
+      const priority = severity * (1 + confirmedWeaknessBoost);
 
-  entries.sort((a, b) =>
-    a.meanStanine !== b.meanStanine
-      ? a.meanStanine - b.meanStanine
-      : a.streak - b.streak
+      const entry: WorkOnEntry = {
+        test: name,
+        meanStanine: mean,
+        streak,
+        nbAttempts,
+        reason: getWorkOnReason(nbAttempts),
+        label,
+      };
+
+      return { entry, priority };
+    })
+    .filter((r) => r.entry.meanStanine < 7);
+
+  ranked.sort((a, b) =>
+    a.priority !== b.priority ? b.priority - a.priority : a.entry.streak - b.entry.streak
   );
 
-  return entries.slice(0, max);
+  return ranked.slice(0, max).map((r) => r.entry);
 };
 
 // --- Sort & filter ---
