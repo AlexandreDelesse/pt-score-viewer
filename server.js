@@ -15,8 +15,11 @@ const __dirname  = path.dirname(__filename);
 
 const PORT        = 5000;
 const BASE_URL    = "https://www.pilotest.com";
-const CONFIG_FILE = path.join(__dirname, "config.json");
-const CACHE_FILE  = path.join(__dirname, "cache.json");
+const DATA_DIR    = process.env.DATA_DIR ?? __dirname;
+const CONFIG_FILE = path.join(DATA_DIR, "config.json");
+const CACHE_FILE  = path.join(DATA_DIR, "cache.json");
+
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // ── Helpers fichiers ──────────────────────────────────────────────────────────
 
@@ -212,6 +215,7 @@ async function doSync(email, password) {
 const ALLOWED_ORIGINS = [
   "http://localhost:5173", // vite dev
   "http://localhost:4173", // vite preview
+  "https://piscovi.ade-dev.fr", // prod
 ];
 
 function cors(res, req) {
@@ -280,7 +284,7 @@ const server = http.createServer(async (req, res) => {
   jsonRes(res, req, 404, { error: "Route inconnue" });
 });
 
-server.listen(PORT, "localhost", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log("═".repeat(50));
   console.log(`  Pilotest Sync Server  —  http://localhost:${PORT}`);
   console.log("═".repeat(50));

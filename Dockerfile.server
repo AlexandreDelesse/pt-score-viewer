@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY server.js ./
 
+ENV DATA_DIR=/app/data
+
 EXPOSE 5000
 
 CMD ["node", "server.js"]
