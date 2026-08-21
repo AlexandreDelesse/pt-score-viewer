@@ -1,5 +1,52 @@
 import type { TestResult } from "../types/testResult";
 
+// --- Date parsing ---
+
+const dateDict = {
+  janvier: 0,
+  fevrier: 1,
+  mars: 2,
+  avril: 3,
+  mai: 4,
+  juin: 5,
+  juillet: 6,
+  aout: 7,
+  septembre: 8,
+  octobre: 9,
+  novembre: 10,
+  decembre: 11,
+} as const;
+
+type MonthKey = keyof typeof dateDict;
+
+const stripAccents = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// Parses TestResult["at"] strings shaped like "lundi 20 Octobre 2025 11h41"
+export const parseAtDate = (dateString: string): Date => {
+  const [, day, month, year] = dateString.split(" ");
+  const monthKey = stripAccents(month.toLowerCase()) as MonthKey;
+  return new Date(parseInt(year), dateDict[monthKey], parseInt(day));
+};
+
+export const isSameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+export const isDateInWeekOf = (dateString: string, reference: Date): boolean => {
+  const date = parseAtDate(dateString);
+  const startOfWeek = new Date(reference);
+  const day = startOfWeek.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  startOfWeek.setDate(startOfWeek.getDate() + diff);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+  return date >= startOfWeek && date <= endOfWeek;
+};
+
 export const filterByHighestStanine = (scoreList: TestResult[]) => {
   let stanineFiltered: TestResult[] = [];
   scoreList.forEach((s: TestResult) => {
