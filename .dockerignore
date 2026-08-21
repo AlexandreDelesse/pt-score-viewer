@@ -7,5 +7,6 @@ cache.json
 config.json
 .env*
 !.env.dev
+!.env.production
 *.md
 .DS_Store

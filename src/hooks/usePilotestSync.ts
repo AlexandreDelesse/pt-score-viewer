@@ -8,7 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TestResult } from "../types/testResult";
 
-const SERVER = "http://localhost:5000";
+const SERVER = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
