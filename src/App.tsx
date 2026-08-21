@@ -44,6 +44,12 @@ export default function App() {
               PiloteTest — Mes scores
             </Typography>
           )}
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Typography variant="caption" sx={{ opacity: 0.6 }}>
+            v{__APP_VERSION__}
+          </Typography>
         </Toolbar>
       </AppBar>
 
