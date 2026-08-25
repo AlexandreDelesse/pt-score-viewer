@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, Chip, Grid, MenuItem, Select, Stack, Typography } from "@mui/material";
-import type { TestCategory, TestCategoryMap, TestResult } from "../../types/testResult";
+import type { TestResult } from "../../types/testResult";
 import PtResultListItem from "./PtResultListItem";
 import {
   sortAndFilterResults,
@@ -14,8 +14,6 @@ interface Props {
   nbOfTest: (resultName: string) => number;
   getStreak: (t: string) => number;
   trendMap: Record<string, number>;
-  categories: TestCategoryMap;
-  setCategory: (test: string, category: TestCategory | null) => void;
 }
 
 const FILTER_LABELS: Record<FilterOption, string> = {
@@ -26,15 +24,7 @@ const FILTER_LABELS: Record<FilterOption, string> = {
 
 const FILTERS: FilterOption[] = ["all", "work_on", "mastered"];
 
-function PtResultList({
-  ptResults,
-  onClick,
-  nbOfTest,
-  getStreak,
-  trendMap,
-  categories,
-  setCategory,
-}: Props) {
+function PtResultList({ ptResults, onClick, nbOfTest, getStreak, trendMap }: Props) {
   const [sort, setSort] = useState<SortOption>("stanine_asc");
   const [filter, setFilter] = useState<FilterOption>("all");
 
@@ -83,8 +73,6 @@ function PtResultList({
               onClick={onClick}
               test={i}
               streak={getStreak(i.test)}
-              category={categories[i.test] ?? null}
-              onCategoryChange={(c) => setCategory(i.test, c)}
             />
           </Grid>
         ))}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, Box, Chip, Stack } from "@mui/material";
 import Save from "@mui/icons-material/Save";
-import type { TestResult } from "../types/testResult";
+import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
 import PtResultNbResume from "../components/results/PtResultNbResume";
 import WorkOnPanel from "../components/results/WorkOnPanel";
@@ -9,7 +9,6 @@ import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
 import useScoreDerived from "../hooks/useScoreDerived";
-import useTestCategories from "../hooks/useTestCategories";
 import { filterByCategory, type CategoryFilter } from "../utils/scoreTools";
 
 interface Props {
@@ -17,6 +16,7 @@ interface Props {
   updateScoreList: (list: TestResult[]) => void;
   save: () => void;
   onTestClick: (test: string) => void;
+  categories: TestCategoryMap;
 }
 
 const CATEGORY_LABELS: Record<CategoryFilter, string> = {
@@ -32,8 +32,8 @@ export default function ResultsPage({
   updateScoreList,
   save,
   onTestClick,
+  categories,
 }: Props) {
-  const { categories, setCategory } = useTestCategories();
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
@@ -84,8 +84,6 @@ export default function ResultsPage({
         ptResults={meanStanineList}
         getStreak={getStreak}
         trendMap={trendMap}
-        categories={categories}
-        setCategory={setCategory}
       />
     </PageBloc>
   );
