@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { TestResult } from "../types/testResult";
+import type { TestCategoryMap, TestResult } from "../types/testResult";
 import {
+  filterByCategory,
   getStanineStreak,
   getWorkOnList,
   meanStanineOnLastFive,
@@ -31,6 +32,33 @@ describe("Returns current streak", () => {
 
   it("returns current streak above threshold", () =>
     expect(getStanineStreak(mockData, 4)).toBe(7));
+});
+
+describe("filterByCategory", () => {
+  const scoreList: TestResult[] = [
+    { test: "Billes", score: "75%", stanine: 5, at: "" },
+    { test: "Cubes 2D/3D - psy0 Air France", score: "50%", stanine: 4, at: "" },
+    { test: "Séries logiques", score: "60%", stanine: 5, at: "" },
+  ];
+
+  const categories: TestCategoryMap = {
+    "Cubes 2D/3D - psy0 Air France": "psy0",
+    "Séries logiques": "psy1",
+  };
+
+  it("returns everything for filter 'all'", () => {
+    expect(filterByCategory(scoreList, categories, "all")).toEqual(scoreList);
+  });
+
+  it("only keeps tests tagged for the requested category", () => {
+    expect(filterByCategory(scoreList, categories, "psy0")).toEqual([scoreList[1]]);
+    expect(filterByCategory(scoreList, categories, "psy1")).toEqual([scoreList[2]]);
+  });
+
+  it("excludes untagged tests from a specific category filter", () => {
+    const result = filterByCategory(scoreList, categories, "psy0");
+    expect(result.some((r) => r.test === "Billes")).toBe(false);
+  });
 });
 
 describe("getWorkOnList", () => {

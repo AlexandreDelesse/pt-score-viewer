@@ -1,5 +1,14 @@
-import type { TestResult } from "../../types/testResult";
-import { Box, Card, CardActionArea, IconButton, Stack, Typography } from "@mui/material";
+import type { TestCategory, TestResult } from "../../types/testResult";
+import {
+  Box,
+  Card,
+  CardActionArea,
+  IconButton,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import StanineDisplay from "./StanineDisplay";
 import ScoreStreak from "../shared/ScoreStreak";
@@ -10,9 +19,18 @@ interface Props {
   nbOfTest: number;
   onClick: (t: TestResult) => void;
   streak?: number;
+  category?: TestCategory | null;
+  onCategoryChange?: (category: TestCategory | null) => void;
 }
 
-function PtResultListItem({ test, onClick, nbOfTest, streak = 0 }: Props) {
+function PtResultListItem({
+  test,
+  onClick,
+  nbOfTest,
+  streak = 0,
+  category = null,
+  onCategoryChange,
+}: Props) {
   return (
     <Card sx={{ width: "100%", height: "100%" }}>
       <CardActionArea sx={{ p: 2, height: "100%" }} onClick={() => onClick(test)}>
@@ -30,6 +48,21 @@ function PtResultListItem({ test, onClick, nbOfTest, streak = 0 }: Props) {
           </Box>
           <Stack direction="row" gap={0.5} alignItems="center">
             <ScoreStreak streak={streak} />
+            <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={category}
+                onChange={(_e, value: TestCategory | null) => onCategoryChange?.(value)}
+              >
+                <ToggleButton value="psy0" sx={{ px: 1, py: 0.25, fontSize: 11 }}>
+                  P0
+                </ToggleButton>
+                <ToggleButton value="psy1" sx={{ px: 1, py: 0.25, fontSize: 11 }}>
+                  P1
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
             <IconButton
               size="small"
               component="a"
