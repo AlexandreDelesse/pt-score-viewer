@@ -1,4 +1,15 @@
-import type { TestResult } from "../types/testResult";
+import type { TestCategoryMap, TestResult } from "../types/testResult";
+
+// --- Category ---
+
+export type CategoryFilter = "all" | "psy0" | "psy1";
+
+export const filterByCategory = (
+  scoreList: TestResult[],
+  categories: TestCategoryMap,
+  filter: CategoryFilter
+): TestResult[] =>
+  filter === "all" ? scoreList : scoreList.filter((r) => categories[r.test] === filter);
 
 // --- Date parsing ---
 

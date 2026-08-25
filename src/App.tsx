@@ -6,11 +6,13 @@ import { useState } from "react";
 import { AppBar, Toolbar, Typography, Breadcrumbs, Link, Box } from "@mui/material";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import useScores from "./hooks/useScores";
+import useTestCategories from "./hooks/useTestCategories";
 import ResultsPage from "./pages/ResultsPage";
 import TestDetailPage from "./pages/TestDetailPage";
 
 export default function App() {
   const { scoreList, updateScoreList, save } = useScores();
+  const { categories, setCategory } = useTestCategories();
   const [selectedTest, setSelectedTest] = useState<string>();
 
   return (
@@ -59,6 +61,8 @@ export default function App() {
             testName={selectedTest}
             scores={scoreList.filter((r) => r.test === selectedTest)}
             onBack={() => setSelectedTest(undefined)}
+            category={categories[selectedTest] ?? null}
+            onCategoryChange={(c) => setCategory(selectedTest, c)}
           />
         ) : (
           <ResultsPage
@@ -66,6 +70,7 @@ export default function App() {
             updateScoreList={updateScoreList}
             save={save}
             onTestClick={setSelectedTest}
+            categories={categories}
           />
         )}
       </Box>
