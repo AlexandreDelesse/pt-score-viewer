@@ -14,7 +14,7 @@ import { filterByCategory, type CategoryFilter } from "../utils/scoreTools";
 interface Props {
   scoreList: TestResult[];
   updateScoreList: (list: TestResult[]) => void;
-  save: () => void;
+  save: (list?: TestResult[]) => void;
   onTestClick: (test: string) => void;
   categories: TestCategoryMap;
 }
@@ -51,11 +51,16 @@ export default function ResultsPage({
       <Box display="flex" flexWrap="wrap" gap={1} my={2} alignItems="flex-start">
         <JsonImportButton onImport={updateScoreList} />
         {scoreList.length > 0 && (
-          <Button color="primary" variant="contained" onClick={save}>
+          <Button color="primary" variant="contained" onClick={() => save()}>
             <Save />
           </Button>
         )}
-        <SyncButton onSyncComplete={updateScoreList} />
+        <SyncButton
+          onSyncComplete={(results) => {
+            updateScoreList(results);
+            save(results);
+          }}
+        />
       </Box>
 
       {scoreList.length > 0 && (

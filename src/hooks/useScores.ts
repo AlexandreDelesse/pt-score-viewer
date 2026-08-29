@@ -17,8 +17,8 @@ export default function useScores() {
 
   const updateScoreList = (list: TestResult[]) => setScoreList(list);
 
-  const save = () =>
-    window.localStorage.setItem("results", JSON.stringify(scoreList));
+  const save = (list: TestResult[] = scoreList) =>
+    window.localStorage.setItem("results", JSON.stringify(list));
 
   return { scoreList, updateScoreList, save };
 }

@@ -5,6 +5,7 @@
  *   const { results, isLoading, isSyncing, error, sync, configure } = usePilotestSync()
  */
 
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TestResult } from "../types/testResult";
 
@@ -103,6 +104,17 @@ export default function usePilotestSync() {
       queryClient.invalidateQueries({ queryKey: ["pilotest", "status"] });
     },
   });
+
+  // Resynchronise automatiquement une fois par chargement de page si déjà configuré
+  const hasAutoSynced = useRef(false);
+
+  useEffect(() => {
+    if (isConfigured && !isSyncing && !hasAutoSynced.current) {
+      hasAutoSynced.current = true;
+      syncMutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConfigured, isSyncing]);
 
   // Mutation : configure les identifiants puis sync
   const configureMutation = useMutation({

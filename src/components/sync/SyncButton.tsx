@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function SyncButton({ onSyncComplete }: Props) {
-  const { results, isSyncing, serverDown, configure, error, updatedAt } =
+  const { results, isSyncing, isConfigured, serverDown, sync, configure, error, updatedAt } =
     usePilotestSync();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -37,32 +37,44 @@ export default function SyncButton({ onSyncComplete }: Props) {
     setPassword("");
   };
 
+  const handleSyncClick = () => {
+    if (isConfigured) sync();
+    else setOpen(true);
+  };
+
   return (
     <Box>
-      <Tooltip
-        title={
-          serverDown
-            ? "Serveur local indisponible (node server.js)"
-            : isSyncing
-            ? "Synchronisation en cours…"
-            : updatedAt
-            ? `Dernière sync : ${new Date(updatedAt).toLocaleString("fr-FR")}`
-            : "Synchroniser avec pilotest.com"
-        }
-      >
-        <span>
-          <Button
-            variant="outlined"
-            startIcon={
-              isSyncing ? <CircularProgress size={16} /> : <SyncIcon />
-            }
-            disabled={serverDown ?? false}
-            onClick={() => setOpen(true)}
-          >
-            Sync
+      <Box display="flex" alignItems="center" gap={1}>
+        <Tooltip
+          title={
+            serverDown
+              ? "Serveur local indisponible (node server.js)"
+              : isSyncing
+              ? "Synchronisation en cours…"
+              : updatedAt
+              ? `Dernière sync : ${new Date(updatedAt).toLocaleString("fr-FR")}`
+              : "Synchroniser avec pilotest.com"
+          }
+        >
+          <span>
+            <Button
+              variant="outlined"
+              startIcon={
+                isSyncing ? <CircularProgress size={16} /> : <SyncIcon />
+              }
+              disabled={(serverDown || isSyncing) ?? false}
+              onClick={handleSyncClick}
+            >
+              Sync
+            </Button>
+          </span>
+        </Tooltip>
+        {isConfigured && (
+          <Button size="small" onClick={() => setOpen(true)}>
+            Modifier les identifiants
           </Button>
-        </span>
-      </Tooltip>
+        )}
+      </Box>
 
       {error && (
         <Alert severity="warning" sx={{ mt: 1 }}>
