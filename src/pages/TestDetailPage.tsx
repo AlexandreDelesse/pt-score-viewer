@@ -60,7 +60,7 @@ export default function TestDetailPage({
           yAxis={[{ min: 1, max: 9 }]}
           series={[
             {
-              curve: "linear",
+              curve: "monotoneX",
               showMark: false,
               data: scores.map((r) => r.stanine),
             },
