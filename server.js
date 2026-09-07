@@ -18,6 +18,7 @@ const BASE_URL    = "https://www.pilotest.com";
 const DATA_DIR    = process.env.DATA_DIR ?? __dirname;
 const CONFIG_FILE = path.join(DATA_DIR, "config.json");
 const CACHE_FILE  = path.join(DATA_DIR, "cache.json");
+const DEBUG_DIR   = path.join(DATA_DIR, "debug");
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -29,6 +30,19 @@ function loadJSON(file) {
 }
 function saveJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+}
+
+// Sauvegarde la réponse brute d'une étape qui a échoué, pour pouvoir diagnostiquer
+// un changement de structure du site sans avoir à reproduire l'erreur en direct.
+function saveDebug(name, content) {
+  try {
+    fs.mkdirSync(DEBUG_DIR, { recursive: true });
+    const file = path.join(DEBUG_DIR, `${name}.html`);
+    fs.writeFileSync(file, content ?? "", "utf8");
+    console.log(`[debug] Réponse sauvegardée dans ${file}`);
+  } catch (e) {
+    console.error(`[debug] Impossible d'écrire le fichier de debug : ${e.message}`);
+  }
 }
 
 // ── Pilotest client ───────────────────────────────────────────────────────────
@@ -118,9 +132,30 @@ class PilotestClient {
     return r;
   }
 
+  // Cherche le token CSRF soit dans le champ caché du formulaire (ancien schéma Rails),
+  // soit dans la balise <meta name="csrf-token"> (schéma utilisé par Turbo/UJS) —
+  // le site a pu migrer de l'un à l'autre.
   _extractCSRF(html) {
-    const m = html.match(/name="authenticity_token"\s+value="([^"]+)"/);
-    return m ? m[1] : null;
+    const hidden = html.match(/name="authenticity_token"\s+value="([^"]+)"/);
+    if (hidden) return hidden[1];
+    const meta = html.match(/<meta\s+name="csrf-token"\s+content="([^"]+)"/);
+    if (meta) return meta[1];
+    return null;
+  }
+
+  // Détecte une page de challenge anti-bot (Cloudflare, etc.) plutôt que le contenu attendu —
+  // cause fréquente d'échec silencieux quand un site renforce sa protection.
+  _detectChallenge(html) {
+    const markers = [
+      "Just a moment",
+      "cf-browser-verification",
+      "cf-chl-",
+      "Attention Required",
+      "Checking your browser",
+      "captcha",
+    ];
+    const lower = html.toLowerCase();
+    return markers.find(m => lower.includes(m.toLowerCase())) ?? null;
   }
 
   async login() {
@@ -128,9 +163,18 @@ class PilotestClient {
 
     const loginPage = await this._get(`${BASE_URL}/fr/users/sign_in`);
     const html      = await loginPage.text();
-    const csrf      = this._extractCSRF(html);
 
-    if (!csrf) throw new Error("Token CSRF introuvable.");
+    const challenge = this._detectChallenge(html);
+    if (challenge) {
+      saveDebug("login-page-challenge", html);
+      throw new Error(`Page de login bloquée par une protection anti-bot (marqueur : "${challenge}"). Voir debug/login-page-challenge.html.`);
+    }
+
+    const csrf = this._extractCSRF(html);
+    if (!csrf) {
+      saveDebug("login-page-no-csrf", html);
+      throw new Error(`Token CSRF introuvable sur la page de login (HTTP ${loginPage.status}) — la structure du site a probablement changé. Voir debug/login-page-no-csrf.html.`);
+    }
     console.log(`[pilotest] CSRF : ${csrf.slice(0, 20)}…`);
 
     const resp      = await this._post(`${BASE_URL}/fr/users/sign_in`, {
@@ -142,10 +186,11 @@ class PilotestClient {
     });
 
     const finalHtml = await resp.text();
-    console.log(`[pilotest] URL finale après login : ${resp.url}`);
+    console.log(`[pilotest] URL finale après login : ${resp.url} (HTTP ${resp.status})`);
 
     if (resp.url?.includes("sign_in") || finalHtml.toLowerCase().includes("invalid")) {
-      throw new Error("Identifiants invalides.");
+      saveDebug("login-post-response", finalHtml);
+      throw new Error(`Identifiants invalides, ou le formulaire de login a changé (champs attendus différents). Voir debug/login-post-response.html.`);
     }
 
     console.log("[pilotest] Connecté ! Cookies stockés :", Object.keys(this.cookies).join(", "));
@@ -158,18 +203,27 @@ class PilotestClient {
 
     const r    = await this._get(url, { asJson: true });
     const text = await r.text();
-    console.log(`[pilotest] Réponse (200 premiers chars) : ${text.slice(0, 200)}`);
+    console.log(`[pilotest] Réponse HTTP ${r.status} (${r.headers.get("content-type") ?? "?"}), 200 premiers chars : ${text.slice(0, 200)}`);
 
     try {
       const data = JSON.parse(text);
       console.log(`[pilotest] ✓ ${Array.isArray(data) ? data.length : "?"} résultats`);
       return data;
     } catch {
+      saveDebug("results-response", text);
+
       // Redirigé vers login → session invalide
       if (text.includes("sign_in")) {
         throw new Error("Session expirée ou invalide — le login n'a pas fonctionné correctement.");
       }
-      throw new Error("Réponse non-JSON depuis /fr/results.json.");
+      const challenge = this._detectChallenge(text);
+      if (challenge) {
+        throw new Error(`Requête bloquée par une protection anti-bot (marqueur : "${challenge}"). Voir debug/results-response.html.`);
+      }
+      if (r.status === 404) {
+        throw new Error(`L'URL /fr/results.json n'existe plus (HTTP 404) — le site a changé sa structure d'API. Voir debug/results-response.html.`);
+      }
+      throw new Error(`Réponse non-JSON depuis /fr/results.json (HTTP ${r.status}). Voir debug/results-response.html.`);
     }
   }
 }
@@ -262,6 +316,30 @@ const server = http.createServer(async (req, res) => {
     const cache = loadCache();
     if (!cache.results) return jsonRes(res, req, 503, { error: "Aucun résultat en cache. Lancez /sync d'abord." });
     return jsonRes(res, req, 200, { results: cache.results, updated_at: cache.updated_at });
+  }
+
+  // Liste ou consulte les réponses brutes sauvegardées lors du dernier échec de sync
+  // (utile pour diagnostiquer un changement de structure du site sans accès shell).
+  if (req.method === "GET" && pathname === "/debug") {
+    let files = [];
+    try {
+      files = fs.readdirSync(DEBUG_DIR).map(name => {
+        const stat = fs.statSync(path.join(DEBUG_DIR, name));
+        return { name, size: stat.size, modified_at: stat.mtime.toISOString() };
+      });
+    } catch { /* pas encore de fichiers de debug */ }
+    return jsonRes(res, req, 200, { files });
+  }
+
+  if (req.method === "GET" && pathname.startsWith("/debug/")) {
+    const name = pathname.slice("/debug/".length);
+    if (!/^[a-zA-Z0-9._-]+$/.test(name)) return jsonRes(res, req, 400, { error: "Nom de fichier invalide" });
+    const file = path.join(DEBUG_DIR, name);
+    if (!file.startsWith(DEBUG_DIR) || !fs.existsSync(file)) return jsonRes(res, req, 404, { error: "Fichier introuvable" });
+    cors(res, req);
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end(fs.readFileSync(file, "utf8"));
+    return;
   }
 
   if (req.method === "POST" && pathname === "/configure") {
