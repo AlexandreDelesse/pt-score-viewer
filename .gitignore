@@ -26,3 +26,4 @@ dist-ssr
 # Serveur sync pilotest — données sensibles, ne jamais commiter
 config.json
 cache.json
+debug/
