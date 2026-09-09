@@ -3,7 +3,8 @@ import { Alert, Button, Box, Chip, Snackbar, Stack } from "@mui/material";
 import Save from "@mui/icons-material/Save";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
-import PtResultNbResume from "../components/results/PtResultNbResume";
+import PtResultNbResume, { type ResumePeriod } from "../components/results/PtResultNbResume";
+import PeriodResultsDialog from "../components/results/PeriodResultsDialog";
 import WorkOnPanel from "../components/results/WorkOnPanel";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
@@ -36,16 +37,23 @@ export default function ResultsPage({
 }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [newResultsCount, setNewResultsCount] = useState<number | null>(null);
+  const [openPeriod, setOpenPeriod] = useState<ResumePeriod | null>(null);
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
 
-  const { meanStanineList, workOnList, trendMap, totalResume, getStreak } =
+  const { meanStanineList, workOnList, trendMap, totalResume, todayResults, weekResults, getStreak } =
     useScoreDerived(filteredScoreList);
 
   const getNbOfResults = (testName: string) =>
     filteredScoreList.filter((r) => r.test === testName).length;
 
   const handleTestClick = (t: TestResult) => onTestClick(t.test);
+
+  const PERIOD_CONTENT: Record<ResumePeriod, { title: string; results: TestResult[] }> = {
+    total: { title: "Tous les résultats", results: filteredScoreList },
+    today: { title: "Résultats d'aujourd'hui", results: todayResults },
+    week: { title: "Résultats de cette semaine", results: weekResults },
+  };
 
   return (
     <PageBloc>
@@ -83,6 +91,7 @@ export default function ResultsPage({
         totalResults={totalResume.totalScore}
         totalDayResult={totalResume.totalTodayScore}
         totalWeekResult={totalResume.totalWeekScore}
+        onSelect={setOpenPeriod}
       />
       <WorkOnPanel entries={workOnList} />
       <PtResultList
@@ -110,6 +119,16 @@ export default function ResultsPage({
             : "Aucun nouveau résultat depuis la dernière synchronisation"}
         </Alert>
       </Snackbar>
+
+      {openPeriod && (
+        <PeriodResultsDialog
+          open
+          title={PERIOD_CONTENT[openPeriod].title}
+          results={PERIOD_CONTENT[openPeriod].results}
+          onClose={() => setOpenPeriod(null)}
+          onSelectTest={handleTestClick}
+        />
+      )}
     </PageBloc>
   );
 }
