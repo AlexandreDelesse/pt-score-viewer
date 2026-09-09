@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { TestResult } from "../../types/testResult";
-import { parseAtDate } from "../../utils/scoreTools";
+import { getStanineColor, parseAtDate } from "../../utils/scoreTools";
 
 interface Props {
   open: boolean;
@@ -54,7 +54,15 @@ function PeriodResultsDialog({ open, title, results, onClose, onSelectTest }: Pr
                   primary={
                     <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
                       <Typography fontWeight={500}>{r.test}</Typography>
-                      <Chip label={`Classe ${r.stanine}`} size="small" color="primary" variant="outlined" />
+                      <Chip
+                        label={`Classe ${r.stanine}`}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          color: getStanineColor(r.stanine),
+                          borderColor: getStanineColor(r.stanine),
+                        }}
+                      />
                     </Stack>
                   }
                   secondary={`${r.score} — ${r.at}`}
