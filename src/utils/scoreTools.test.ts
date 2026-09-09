@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import {
+  countNewResults,
   filterByCategory,
   getStanineStreak,
   getWorkOnList,
   meanStanineOnLastFive,
   parseAtDate,
+  sortByAtDate,
   isSameDay,
   isDateInWeekOf,
 } from "./scoreTools";
@@ -112,6 +114,103 @@ describe("parseAtDate", () => {
     expect(parseAtDate("mercredi 03 Décembre 2025 06h17").getMonth()).toBe(11);
     expect(parseAtDate("samedi 14 Février 2026 09h00").getMonth()).toBe(1);
     expect(parseAtDate("vendredi 01 Août 2025 08h00").getMonth()).toBe(7);
+  });
+});
+
+describe("parseAtDate — time component", () => {
+  it("parses the hour and minute instead of discarding them", () => {
+    const date = parseAtDate("mardi 18 Août 2026 15h09");
+    expect(date.getHours()).toBe(15);
+    expect(date.getMinutes()).toBe(9);
+  });
+});
+
+describe("sortByAtDate", () => {
+  it("reorders entries chronologically, including intra-day inversions", () => {
+    // Reproduit un extrait réel où pilotest.com renvoie les tentatives dans
+    // un ordre qui n'est pas strictement chronologique (15h09 avant 15h00).
+    const scoreList: TestResult[] = [
+      { test: "Calcul mental 1", score: "10%", stanine: 2, at: "mardi 18 Août 2026 15h09" },
+      { test: "Grilles de calculs", score: "70%", stanine: 4, at: "mardi 18 Août 2026 15h00" },
+      { test: "Calcul mental 1", score: "10%", stanine: 2, at: "mardi 18 Août 2026 15h13" },
+    ];
+
+    expect(sortByAtDate(scoreList).map((r) => r.at)).toEqual([
+      "mardi 18 Août 2026 15h00",
+      "mardi 18 Août 2026 15h09",
+      "mardi 18 Août 2026 15h13",
+    ]);
+  });
+
+  it("reorders entries that jump backward across weeks", () => {
+    // Reproduit un extrait réel : un bloc du 11 Août apparaissait après des
+    // entrées du 19 Août dans la réponse brute de pilotest.com.
+    const scoreList: TestResult[] = [
+      { test: "Calcul mental 1", score: "10%", stanine: 2, at: "mercredi 19 Août 2026 15h29" },
+      { test: "Grilles de calculs", score: "30%", stanine: 1, at: "mardi 11 Août 2026 20h51" },
+      { test: "Calcul mental 2", score: "20%", stanine: 1, at: "mercredi 19 Août 2026 18h32" },
+    ];
+
+    expect(sortByAtDate(scoreList).map((r) => r.at)).toEqual([
+      "mardi 11 Août 2026 20h51",
+      "mercredi 19 Août 2026 15h29",
+      "mercredi 19 Août 2026 18h32",
+    ]);
+  });
+
+  it("does not mutate the input list", () => {
+    const scoreList: TestResult[] = [
+      { test: "A", score: "10%", stanine: 2, at: "mardi 18 Août 2026 15h09" },
+      { test: "B", score: "10%", stanine: 2, at: "mardi 18 Août 2026 15h00" },
+    ];
+    const original = [...scoreList];
+    sortByAtDate(scoreList);
+    expect(scoreList).toEqual(original);
+  });
+});
+
+describe("countNewResults", () => {
+  const at = (h: string) => `mardi 18 Août 2026 ${h}`;
+
+  it("counts entries in next that are absent from previous", () => {
+    const previous: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+    ];
+    const next: TestResult[] = [
+      ...previous,
+      { test: "Billes", score: "85%", stanine: 6, at: at("11h49") },
+      { test: "Airways", score: "55%", stanine: 4, at: at("15h47") },
+    ];
+
+    expect(countNewResults(previous, next)).toBe(2);
+  });
+
+  it("returns 0 when nothing changed", () => {
+    const scoreList: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+    ];
+    expect(countNewResults(scoreList, scoreList)).toBe(0);
+  });
+
+  it("treats same test+timestamp as the same attempt even if the score differs", () => {
+    // Un même couple test+date-heure ne peut correspondre qu'à une seule
+    // tentative réelle : une différence de score à cette clé est un détail
+    // de resynchronisation, pas un nouveau résultat.
+    const previous: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+    ];
+    const next: TestResult[] = [
+      { test: "Billes", score: "80%", stanine: 5, at: at("11h41") },
+    ];
+    expect(countNewResults(previous, next)).toBe(0);
+  });
+
+  it("counts every entry as new when previous is empty (first sync)", () => {
+    const next: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+      { test: "Airways", score: "55%", stanine: 4, at: at("15h47") },
+    ];
+    expect(countNewResults([], next)).toBe(2);
   });
 });
 

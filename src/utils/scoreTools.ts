@@ -35,9 +35,32 @@ const stripAccents = (s: string) =>
 
 // Parses TestResult["at"] strings shaped like "lundi 20 Octobre 2025 11h41"
 export const parseAtDate = (dateString: string): Date => {
-  const [, day, month, year] = dateString.split(" ");
+  const [, day, month, year, time] = dateString.split(" ");
   const monthKey = stripAccents(month.toLowerCase()) as MonthKey;
-  return new Date(parseInt(year), dateDict[monthKey], parseInt(day));
+  const date = new Date(parseInt(year), dateDict[monthKey], parseInt(day));
+  const timeMatch = time?.match(/^(\d{1,2})h(\d{2})$/);
+  if (timeMatch) date.setHours(parseInt(timeMatch[1]), parseInt(timeMatch[2]), 0, 0);
+  return date;
+};
+
+// Pilotest ne garantit pas que /results renvoie les tentatives dans l'ordre
+// chronologique (elles peuvent être groupées par test) — or getStanineStreak,
+// meanStanineOnLastFive et computeTrend supposent toutes une liste triée du
+// plus ancien au plus récent. Tri stable : à horodatage égal, l'ordre d'origine
+// est conservé.
+export const sortByAtDate = (list: TestResult[]): TestResult[] =>
+  [...list].sort((a, b) => parseAtDate(a.at).getTime() - parseAtDate(b.at).getTime());
+
+// Une tentative n'a pas d'identifiant propre : le couple test+date-heure sert
+// de clé naturelle (deux tentatives du même test à la même minute sont, de
+// toute façon, indiscernables dans les données renvoyées par pilotest.com).
+const resultKey = (r: TestResult): string => `${r.test}__${r.at}`;
+
+// Compte, dans `next`, les résultats absents de `previous` — utilisé pour
+// annoncer "X nouveaux résultats" après une synchronisation.
+export const countNewResults = (previous: TestResult[], next: TestResult[]): number => {
+  const previousKeys = new Set(previous.map(resultKey));
+  return next.filter((r) => !previousKeys.has(resultKey(r))).length;
 };
 
 export const isSameDay = (a: Date, b: Date): boolean =>
