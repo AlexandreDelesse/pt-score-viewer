@@ -12,6 +12,7 @@ interface Props {
   ptResults: TestResult[];
   onClick: (t: TestResult) => void;
   nbOfTest: (resultName: string) => number;
+  getBestScore: (resultName: string) => string | null;
   getStreak: (t: string) => number;
   trendMap: Record<string, number>;
 }
@@ -24,7 +25,7 @@ const FILTER_LABELS: Record<FilterOption, string> = {
 
 const FILTERS: FilterOption[] = ["all", "work_on", "mastered"];
 
-function PtResultList({ ptResults, onClick, nbOfTest, getStreak, trendMap }: Props) {
+function PtResultList({ ptResults, onClick, nbOfTest, getBestScore, getStreak, trendMap }: Props) {
   const [sort, setSort] = useState<SortOption>("stanine_asc");
   const [filter, setFilter] = useState<FilterOption>("all");
 
@@ -65,11 +66,12 @@ function PtResultList({ ptResults, onClick, nbOfTest, getStreak, trendMap }: Pro
           <MenuItem value="trend_neg">Tendance négative</MenuItem>
         </Select>
       </Stack>
-      <Grid container spacing={2}>
+      <Grid container spacing={1.5}>
         {displayList.map((i) => (
-          <Grid key={i.test + i.at} size={{ xs: 12, sm: 6, lg: 4 }}>
+          <Grid key={i.test + i.at} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
             <PtResultListItem
               nbOfTest={nbOfTest(i.test)}
+              bestScore={getBestScore(i.test)}
               onClick={onClick}
               test={i}
               streak={getStreak(i.test)}

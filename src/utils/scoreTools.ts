@@ -63,6 +63,19 @@ export const parseAtDate = (dateString: string): Date => {
   return date;
 };
 
+// Jours pleins entre "from" (par défaut maintenant) et une date cible
+// "YYYY-MM-DD", en ignorant l'heure des deux côtés (un objectif est fixé
+// jour par jour, pas à la minute près). Négatif si la cible est passée.
+export const daysUntil = (isoDate: string, from: Date = new Date()): number => {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const target = new Date(year, month - 1, day);
+  target.setHours(0, 0, 0, 0);
+  const start = new Date(from);
+  start.setHours(0, 0, 0, 0);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.round((target.getTime() - start.getTime()) / msPerDay);
+};
+
 // Pilotest ne garantit pas que /results renvoie les tentatives dans l'ordre
 // chronologique (elles peuvent être groupées par test) — or getStanineStreak,
 // meanStanineOnLastFive et computeTrend supposent toutes une liste triée du

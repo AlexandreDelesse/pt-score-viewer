@@ -5,11 +5,13 @@ import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
 import PtResultNbResume, { type ResumePeriod } from "../components/results/PtResultNbResume";
 import PeriodResultsDialog from "../components/results/PeriodResultsDialog";
+import ExamGoalPanel from "../components/results/ExamGoalPanel";
 import WorkOnPanel from "../components/results/WorkOnPanel";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
 import useScoreDerived from "../hooks/useScoreDerived";
+import useExamGoal from "../hooks/useExamGoal";
 import { countNewResults, filterByCategory, type CategoryFilter } from "../utils/scoreTools";
 
 interface Props {
@@ -38,6 +40,7 @@ export default function ResultsPage({
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [newResultsCount, setNewResultsCount] = useState<number | null>(null);
   const [openPeriod, setOpenPeriod] = useState<ResumePeriod | null>(null);
+  const { examGoal, setExamGoal } = useExamGoal();
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
 
@@ -46,6 +49,12 @@ export default function ResultsPage({
 
   const getNbOfResults = (testName: string) =>
     filteredScoreList.filter((r) => r.test === testName).length;
+
+  const getBestScore = (testName: string): string | null => {
+    const attempts = filteredScoreList.filter((r) => r.test === testName);
+    if (!attempts.length) return null;
+    return attempts.reduce((best, r) => (parseInt(r.score) > parseInt(best.score) ? r : best)).score;
+  };
 
   const handleTestClick = (t: TestResult) => onTestClick(t.test);
 
@@ -87,15 +96,25 @@ export default function ResultsPage({
         </Stack>
       )}
 
+      {scoreList.length > 0 && (
+        <ExamGoalPanel
+          meanStanineList={meanStanineList}
+          getNbOfResults={getNbOfResults}
+          onSelectTest={handleTestClick}
+          examGoal={examGoal}
+          onExamGoalChange={setExamGoal}
+        />
+      )}
       <PtResultNbResume
         totalResults={totalResume.totalScore}
         totalDayResult={totalResume.totalTodayScore}
         totalWeekResult={totalResume.totalWeekScore}
         onSelect={setOpenPeriod}
       />
-      <WorkOnPanel entries={workOnList} />
+      <WorkOnPanel entries={workOnList} weekResults={weekResults} />
       <PtResultList
         nbOfTest={getNbOfResults}
+        getBestScore={getBestScore}
         onClick={handleTestClick}
         ptResults={meanStanineList}
         getStreak={getStreak}
