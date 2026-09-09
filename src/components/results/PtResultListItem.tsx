@@ -34,17 +34,16 @@ function PtResultListItem({ test, onClick, nbOfTest, bestScore, streak = 0 }: Pr
           </Box>
           <Chip
             label={test.stanine.toFixed(1)}
-            size="small"
-            variant="outlined"
             sx={{
-              fontWeight: 600,
-              color: getStanineColor(test.stanine),
-              borderColor: getStanineColor(test.stanine),
+              fontWeight: 700,
+              fontSize: 15,
+              color: "#fff",
+              bgcolor: getStanineColor(test.stanine),
             }}
           />
         </Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1}>
-          <ScoreStreak streak={streak} />
+          <ScoreStreak streak={streak} size="sm" />
           <IconButton
             size="small"
             component="a"
