@@ -15,6 +15,7 @@ import PageBloc from "../components/layout/PageBloc";
 interface Props {
   testName: string;
   scores: TestResult[];
+  streak: number;
   onBack: () => void;
   category: TestCategory | null;
   onCategoryChange: (category: TestCategory | null) => void;
@@ -23,6 +24,7 @@ interface Props {
 export default function TestDetailPage({
   testName,
   scores,
+  streak,
   onBack,
   category,
   onCategoryChange,
@@ -54,6 +56,11 @@ export default function TestDetailPage({
       >
         {testName}
       </Typography>
+      {streak > 0 && (
+        <Typography textAlign="center" color="success.main" variant="body2" fontWeight={600} mb={1}>
+          {streak} tentative{streak > 1 ? "s" : ""} d'affilée ≥ classe 7
+        </Typography>
+      )}
       <Box mt={1}>
         <LineChart
           grid={{ horizontal: true }}

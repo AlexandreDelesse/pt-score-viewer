@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import {
   countNewResults,
+  daysUntil,
   filterByCategory,
   getStanineStreak,
   getWorkOnList,
@@ -211,6 +212,23 @@ describe("countNewResults", () => {
       { test: "Airways", score: "55%", stanine: 4, at: at("15h47") },
     ];
     expect(countNewResults([], next)).toBe(2);
+  });
+});
+
+describe("daysUntil", () => {
+  it("counts whole days ahead, ignoring time of day", () => {
+    const from = new Date(2026, 8, 9, 23, 50); // 9 sept. 2026, 23h50
+    expect(daysUntil("2026-10-19", from)).toBe(40);
+  });
+
+  it("returns 0 on the target day itself", () => {
+    const from = new Date(2026, 9, 19, 8, 0);
+    expect(daysUntil("2026-10-19", from)).toBe(0);
+  });
+
+  it("returns a negative count once the target date has passed", () => {
+    const from = new Date(2026, 9, 20);
+    expect(daysUntil("2026-10-19", from)).toBe(-1);
   });
 });
 

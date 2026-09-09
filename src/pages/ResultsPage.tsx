@@ -3,12 +3,15 @@ import { Alert, Button, Box, Chip, Snackbar, Stack } from "@mui/material";
 import Save from "@mui/icons-material/Save";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
-import PtResultNbResume from "../components/results/PtResultNbResume";
+import PtResultNbResume, { type ResumePeriod } from "../components/results/PtResultNbResume";
+import PeriodResultsDialog from "../components/results/PeriodResultsDialog";
+import ExamGoalPanel from "../components/results/ExamGoalPanel";
 import WorkOnPanel from "../components/results/WorkOnPanel";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
 import useScoreDerived from "../hooks/useScoreDerived";
+import useExamGoal from "../hooks/useExamGoal";
 import { countNewResults, filterByCategory, type CategoryFilter } from "../utils/scoreTools";
 
 interface Props {
@@ -36,16 +39,30 @@ export default function ResultsPage({
 }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [newResultsCount, setNewResultsCount] = useState<number | null>(null);
+  const [openPeriod, setOpenPeriod] = useState<ResumePeriod | null>(null);
+  const { examGoal, setExamGoal } = useExamGoal();
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
 
-  const { meanStanineList, workOnList, trendMap, totalResume, getStreak } =
+  const { meanStanineList, workOnList, trendMap, totalResume, todayResults, weekResults } =
     useScoreDerived(filteredScoreList);
 
   const getNbOfResults = (testName: string) =>
     filteredScoreList.filter((r) => r.test === testName).length;
 
+  const getBestScore = (testName: string): string | null => {
+    const attempts = filteredScoreList.filter((r) => r.test === testName);
+    if (!attempts.length) return null;
+    return attempts.reduce((best, r) => (parseInt(r.score) > parseInt(best.score) ? r : best)).score;
+  };
+
   const handleTestClick = (t: TestResult) => onTestClick(t.test);
+
+  const PERIOD_CONTENT: Record<ResumePeriod, { title: string; results: TestResult[] }> = {
+    total: { title: "Tous les résultats", results: filteredScoreList },
+    today: { title: "Résultats d'aujourd'hui", results: todayResults },
+    week: { title: "Résultats de cette semaine", results: weekResults },
+  };
 
   return (
     <PageBloc>
@@ -79,17 +96,27 @@ export default function ResultsPage({
         </Stack>
       )}
 
+      {scoreList.length > 0 && (
+        <ExamGoalPanel
+          meanStanineList={meanStanineList}
+          getNbOfResults={getNbOfResults}
+          onSelectTest={handleTestClick}
+          examGoal={examGoal}
+          onExamGoalChange={setExamGoal}
+        />
+      )}
       <PtResultNbResume
         totalResults={totalResume.totalScore}
         totalDayResult={totalResume.totalTodayScore}
         totalWeekResult={totalResume.totalWeekScore}
+        onSelect={setOpenPeriod}
       />
-      <WorkOnPanel entries={workOnList} />
+      <WorkOnPanel entries={workOnList} weekResults={weekResults} />
       <PtResultList
         nbOfTest={getNbOfResults}
+        getBestScore={getBestScore}
         onClick={handleTestClick}
         ptResults={meanStanineList}
-        getStreak={getStreak}
         trendMap={trendMap}
       />
 
@@ -110,6 +137,16 @@ export default function ResultsPage({
             : "Aucun nouveau résultat depuis la dernière synchronisation"}
         </Alert>
       </Snackbar>
+
+      {openPeriod && (
+        <PeriodResultsDialog
+          open
+          title={PERIOD_CONTENT[openPeriod].title}
+          results={PERIOD_CONTENT[openPeriod].results}
+          onClose={() => setOpenPeriod(null)}
+          onSelectTest={handleTestClick}
+        />
+      )}
     </PageBloc>
   );
 }

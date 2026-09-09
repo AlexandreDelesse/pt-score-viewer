@@ -1,49 +1,58 @@
 import type { TestResult } from "../../types/testResult";
-import { Box, Card, CardActionArea, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Card, CardActionArea, Chip, IconButton, Stack, Typography } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import StanineDisplay from "./StanineDisplay";
-import ScoreStreak from "../shared/ScoreStreak";
-import { testNameToSlug } from "../../utils/scoreTools";
+import { getStanineColor, testNameToSlug } from "../../utils/scoreTools";
 
 interface Props {
   test: TestResult;
   nbOfTest: number;
+  bestScore: string | null;
   onClick: (t: TestResult) => void;
-  streak?: number;
 }
 
-function PtResultListItem({ test, onClick, nbOfTest, streak = 0 }: Props) {
+function PtResultListItem({ test, onClick, nbOfTest, bestScore }: Props) {
   return (
     <Card sx={{ width: "100%", height: "100%" }}>
-      <CardActionArea sx={{ p: 2, height: "100%" }} onClick={() => onClick(test)}>
-        <Box display="flex" justifyContent="space-between">
-          <Box>
-            <Typography fontWeight={500}>{test.test}</Typography>
-            <Stack direction="row" gap={1}>
-              <Typography variant="body2" color="text.secondary">
-                {nbOfTest} résultats
+      <CardActionArea sx={{ p: 1.5, height: "100%" }} onClick={() => onClick(test)}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1}>
+          <Box minWidth={0}>
+            <Typography fontWeight={500} noWrap>
+              {test.test}
+            </Typography>
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              <Typography variant="caption" color="text.secondary">
+                {nbOfTest} résultat{nbOfTest > 1 ? "s" : ""}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                best : {test.score}
-              </Typography>
+              {bestScore && (
+                <Typography variant="caption" color="text.secondary">
+                  best : {bestScore}
+                </Typography>
+              )}
             </Stack>
           </Box>
-          <Stack direction="row" gap={0.5} alignItems="center">
-            <ScoreStreak streak={streak} />
-            <IconButton
-              size="small"
-              component="a"
-              href={`https://www.pilotest.com/fr/tests/${testNameToSlug(test.test)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            >
-              <OpenInNewIcon fontSize="small" />
-            </IconButton>
-          </Stack>
+          <Chip
+            label={test.stanine.toFixed(1)}
+            sx={{
+              fontWeight: 700,
+              fontSize: 15,
+              color: "#fff",
+              bgcolor: getStanineColor(test.stanine),
+            }}
+          />
         </Box>
-        <StanineDisplay stanine={test.stanine} />
-        <Typography variant="caption">{test.at}</Typography>
+        <Stack direction="row" justifyContent="flex-end" alignItems="center" mt={1}>
+          <IconButton
+            size="small"
+            component="a"
+            href={`https://www.pilotest.com/fr/tests/${testNameToSlug(test.test)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            sx={{ p: 0.5 }}
+          >
+            <OpenInNewIcon fontSize="small" />
+          </IconButton>
+        </Stack>
       </CardActionArea>
     </Card>
   );

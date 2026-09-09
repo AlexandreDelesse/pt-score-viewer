@@ -11,6 +11,26 @@ export const filterByCategory = (
 ): TestResult[] =>
   filter === "all" ? scoreList : scoreList.filter((r) => categories[r.test] === filter);
 
+// --- Stanine colors ---
+
+// Palette utilisée partout où une classe stanine est affichée (StanineDisplay,
+// liste des résultats d'une période...), du rouge (classe 1) au vert sapin
+// (classe 9), en passant par des tons chauds intermédiaires.
+const STANINE_COLORS = [
+  "#b33939", // 1 - Rouge mat
+  "#cd533b", // 2
+  "#d87b5a", // 3 - Orange brûlé
+  "#d8a657", // 4 - Ocre
+  "#c7b98b", // 5 - Taupe ton chaud
+  "#8aa87f", // 6 - Vert olive doux
+  "#5d8c61", // 7 - Vert mat
+  "#3e7c59", // 8 - Vert foncé mat
+  "#2d5d4d", // 9 - Vert sapin profond
+] as const;
+
+export const getStanineColor = (stanine: number): string =>
+  STANINE_COLORS[Math.round(stanine) - 1] ?? "#9e9e9e";
+
 // --- Date parsing ---
 
 const dateDict = {
@@ -41,6 +61,19 @@ export const parseAtDate = (dateString: string): Date => {
   const timeMatch = time?.match(/^(\d{1,2})h(\d{2})$/);
   if (timeMatch) date.setHours(parseInt(timeMatch[1]), parseInt(timeMatch[2]), 0, 0);
   return date;
+};
+
+// Jours pleins entre "from" (par défaut maintenant) et une date cible
+// "YYYY-MM-DD", en ignorant l'heure des deux côtés (un objectif est fixé
+// jour par jour, pas à la minute près). Négatif si la cible est passée.
+export const daysUntil = (isoDate: string, from: Date = new Date()): number => {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const target = new Date(year, month - 1, day);
+  target.setHours(0, 0, 0, 0);
+  const start = new Date(from);
+  start.setHours(0, 0, 0, 0);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.round((target.getTime() - start.getTime()) / msPerDay);
 };
 
 // Pilotest ne garantit pas que /results renvoie les tentatives dans l'ordre
