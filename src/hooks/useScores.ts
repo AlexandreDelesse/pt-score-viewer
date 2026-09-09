@@ -22,8 +22,12 @@ export default function useScores() {
   // chronologique sans avoir à retrier lui-même.
   const updateScoreList = (list: TestResult[]) => setScoreList(sortByAtDate(list));
 
+  // Trie aussi ici, indépendamment de updateScoreList : un appelant peut passer
+  // une liste brute fraîchement reçue (ex. juste après une sync) avant que le
+  // state `scoreList` trié ait eu le temps de se propager, ce qui persisterait
+  // l'ordre non trié dans le localStorage.
   const save = (list: TestResult[] = scoreList) =>
-    window.localStorage.setItem("results", JSON.stringify(list));
+    window.localStorage.setItem("results", JSON.stringify(sortByAtDate(list)));
 
   return { scoreList, updateScoreList, save };
 }
