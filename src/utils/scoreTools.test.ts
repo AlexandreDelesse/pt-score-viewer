@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import {
+  countNewResults,
   filterByCategory,
   getStanineStreak,
   getWorkOnList,
@@ -165,6 +166,51 @@ describe("sortByAtDate", () => {
     const original = [...scoreList];
     sortByAtDate(scoreList);
     expect(scoreList).toEqual(original);
+  });
+});
+
+describe("countNewResults", () => {
+  const at = (h: string) => `mardi 18 Août 2026 ${h}`;
+
+  it("counts entries in next that are absent from previous", () => {
+    const previous: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+    ];
+    const next: TestResult[] = [
+      ...previous,
+      { test: "Billes", score: "85%", stanine: 6, at: at("11h49") },
+      { test: "Airways", score: "55%", stanine: 4, at: at("15h47") },
+    ];
+
+    expect(countNewResults(previous, next)).toBe(2);
+  });
+
+  it("returns 0 when nothing changed", () => {
+    const scoreList: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+    ];
+    expect(countNewResults(scoreList, scoreList)).toBe(0);
+  });
+
+  it("treats same test+timestamp as the same attempt even if the score differs", () => {
+    // Un même couple test+date-heure ne peut correspondre qu'à une seule
+    // tentative réelle : une différence de score à cette clé est un détail
+    // de resynchronisation, pas un nouveau résultat.
+    const previous: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+    ];
+    const next: TestResult[] = [
+      { test: "Billes", score: "80%", stanine: 5, at: at("11h41") },
+    ];
+    expect(countNewResults(previous, next)).toBe(0);
+  });
+
+  it("counts every entry as new when previous is empty (first sync)", () => {
+    const next: TestResult[] = [
+      { test: "Billes", score: "75%", stanine: 5, at: at("11h41") },
+      { test: "Airways", score: "55%", stanine: 4, at: at("15h47") },
+    ];
+    expect(countNewResults([], next)).toBe(2);
   });
 });
 

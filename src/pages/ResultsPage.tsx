@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Box, Chip, Stack } from "@mui/material";
+import { Alert, Button, Box, Chip, Snackbar, Stack } from "@mui/material";
 import Save from "@mui/icons-material/Save";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
@@ -9,7 +9,7 @@ import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
 import useScoreDerived from "../hooks/useScoreDerived";
-import { filterByCategory, type CategoryFilter } from "../utils/scoreTools";
+import { countNewResults, filterByCategory, type CategoryFilter } from "../utils/scoreTools";
 
 interface Props {
   scoreList: TestResult[];
@@ -35,6 +35,7 @@ export default function ResultsPage({
   categories,
 }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [newResultsCount, setNewResultsCount] = useState<number | null>(null);
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
 
@@ -57,6 +58,7 @@ export default function ResultsPage({
         )}
         <SyncButton
           onSyncComplete={(results) => {
+            setNewResultsCount(countNewResults(scoreList, results));
             updateScoreList(results);
             save(results);
           }}
@@ -90,6 +92,24 @@ export default function ResultsPage({
         getStreak={getStreak}
         trendMap={trendMap}
       />
+
+      <Snackbar
+        open={newResultsCount !== null}
+        autoHideDuration={4000}
+        onClose={() => setNewResultsCount(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setNewResultsCount(null)}
+          severity={newResultsCount ? "success" : "info"}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {newResultsCount
+            ? `${newResultsCount} nouveau${newResultsCount > 1 ? "x" : ""} résultat${newResultsCount > 1 ? "s" : ""} récupéré${newResultsCount > 1 ? "s" : ""} depuis pilotest.com`
+            : "Aucun nouveau résultat depuis la dernière synchronisation"}
+        </Alert>
+      </Snackbar>
     </PageBloc>
   );
 }

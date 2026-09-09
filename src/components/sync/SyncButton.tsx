@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -26,8 +26,17 @@ export default function SyncButton({ onSyncComplete }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Toujours appeler la dernière version de onSyncComplete (elle capture le
+  // scoreList courant du parent pour calculer les nouveautés) sans pour autant
+  // redéclencher l'effet à chaque re-render : seul un changement de `results`
+  // doit déclencher un appel.
+  const onSyncCompleteRef = useRef(onSyncComplete);
   useEffect(() => {
-    if (results?.length) onSyncComplete(results);
+    onSyncCompleteRef.current = onSyncComplete;
+  });
+
+  useEffect(() => {
+    if (results?.length) onSyncCompleteRef.current(results);
   }, [results]);
 
   const handleSubmit = () => {
