@@ -9,6 +9,7 @@ import useScores from "./hooks/useScores";
 import useTestCategories from "./hooks/useTestCategories";
 import ResultsPage from "./pages/ResultsPage";
 import TestDetailPage from "./pages/TestDetailPage";
+import { getStanineStreak } from "./utils/scoreTools";
 
 export default function App() {
   const { scoreList, updateScoreList, save } = useScores();
@@ -60,6 +61,7 @@ export default function App() {
           <TestDetailPage
             testName={selectedTest}
             scores={scoreList.filter((r) => r.test === selectedTest)}
+            streak={getStanineStreak(scoreList.filter((r) => r.test === selectedTest))}
             onBack={() => setSelectedTest(undefined)}
             category={categories[selectedTest] ?? null}
             onCategoryChange={(c) => setCategory(selectedTest, c)}

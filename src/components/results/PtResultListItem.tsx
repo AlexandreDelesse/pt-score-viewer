@@ -1,7 +1,6 @@
 import type { TestResult } from "../../types/testResult";
 import { Box, Card, CardActionArea, Chip, IconButton, Stack, Typography } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import ScoreStreak from "../shared/ScoreStreak";
 import { getStanineColor, testNameToSlug } from "../../utils/scoreTools";
 
 interface Props {
@@ -9,10 +8,9 @@ interface Props {
   nbOfTest: number;
   bestScore: string | null;
   onClick: (t: TestResult) => void;
-  streak?: number;
 }
 
-function PtResultListItem({ test, onClick, nbOfTest, bestScore, streak = 0 }: Props) {
+function PtResultListItem({ test, onClick, nbOfTest, bestScore }: Props) {
   return (
     <Card sx={{ width: "100%", height: "100%" }}>
       <CardActionArea sx={{ p: 1.5, height: "100%" }} onClick={() => onClick(test)}>
@@ -42,8 +40,7 @@ function PtResultListItem({ test, onClick, nbOfTest, bestScore, streak = 0 }: Pr
             }}
           />
         </Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1}>
-          <ScoreStreak streak={streak} size="sm" />
+        <Stack direction="row" justifyContent="flex-end" alignItems="center" mt={1}>
           <IconButton
             size="small"
             component="a"

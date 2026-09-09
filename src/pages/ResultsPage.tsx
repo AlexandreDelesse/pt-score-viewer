@@ -44,7 +44,7 @@ export default function ResultsPage({
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
 
-  const { meanStanineList, workOnList, trendMap, totalResume, todayResults, weekResults, getStreak } =
+  const { meanStanineList, workOnList, trendMap, totalResume, todayResults, weekResults } =
     useScoreDerived(filteredScoreList);
 
   const getNbOfResults = (testName: string) =>
@@ -117,7 +117,6 @@ export default function ResultsPage({
         getBestScore={getBestScore}
         onClick={handleTestClick}
         ptResults={meanStanineList}
-        getStreak={getStreak}
         trendMap={trendMap}
       />
 

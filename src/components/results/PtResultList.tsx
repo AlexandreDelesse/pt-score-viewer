@@ -13,7 +13,6 @@ interface Props {
   onClick: (t: TestResult) => void;
   nbOfTest: (resultName: string) => number;
   getBestScore: (resultName: string) => string | null;
-  getStreak: (t: string) => number;
   trendMap: Record<string, number>;
 }
 
@@ -25,7 +24,7 @@ const FILTER_LABELS: Record<FilterOption, string> = {
 
 const FILTERS: FilterOption[] = ["all", "work_on", "mastered"];
 
-function PtResultList({ ptResults, onClick, nbOfTest, getBestScore, getStreak, trendMap }: Props) {
+function PtResultList({ ptResults, onClick, nbOfTest, getBestScore, trendMap }: Props) {
   const [sort, setSort] = useState<SortOption>("stanine_asc");
   const [filter, setFilter] = useState<FilterOption>("all");
 
@@ -74,7 +73,6 @@ function PtResultList({ ptResults, onClick, nbOfTest, getBestScore, getStreak, t
               bestScore={getBestScore(i.test)}
               onClick={onClick}
               test={i}
-              streak={getStreak(i.test)}
             />
           </Grid>
         ))}
