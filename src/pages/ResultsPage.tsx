@@ -7,6 +7,7 @@ import PtResultNbResume, { type ResumePeriod } from "../components/results/PtRes
 import PeriodResultsDialog from "../components/results/PeriodResultsDialog";
 import ExamGoalPanel from "../components/results/ExamGoalPanel";
 import WorkOnPanel from "../components/results/WorkOnPanel";
+import TodayFocusPanel from "../components/results/TodayFocusPanel";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
@@ -44,7 +45,7 @@ export default function ResultsPage({
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
 
-  const { meanStanineList, workOnList, trendMap, totalResume, todayResults, weekResults } =
+  const { meanStanineList, workOnList, dailyFocus, trendMap, totalResume, todayResults, weekResults } =
     useScoreDerived(filteredScoreList);
 
   const getNbOfResults = (testName: string) =>
@@ -111,6 +112,7 @@ export default function ResultsPage({
         totalWeekResult={totalResume.totalWeekScore}
         onSelect={setOpenPeriod}
       />
+      <TodayFocusPanel entries={dailyFocus.entries} dailyMinimum={dailyFocus.dailyMinimum} />
       <WorkOnPanel entries={workOnList} weekResults={weekResults} />
       <PtResultList
         nbOfTest={getNbOfResults}

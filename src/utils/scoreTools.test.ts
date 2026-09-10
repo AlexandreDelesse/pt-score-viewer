@@ -3,7 +3,9 @@ import type { TestCategoryMap, TestResult } from "../types/testResult";
 import {
   countNewResults,
   daysUntil,
+  daysLeftInWeek,
   filterByCategory,
+  getDailyFocus,
   getStanineStreak,
   getWorkOnList,
   meanStanineOnLastFive,
@@ -100,6 +102,71 @@ describe("getWorkOnList", () => {
     const list = getWorkOnList(scoreList, noStreak);
 
     expect(list[0].reason).toBe("Faiblesse confirmée sur 5 tentatives");
+  });
+
+  it("assigns a weekly target based on the severity label", () => {
+    const scoreList = [
+      ...attempts("Très faible", 5, 3), // mean 3 -> Insuffisant
+      ...attempts("Moyen", 5, 5.5), // mean 5.5 -> À améliorer
+      ...attempts("Proche", 5, 6.5), // mean 6.5 -> Proche de l'objectif
+    ];
+
+    const list = getWorkOnList(scoreList, noStreak, 10);
+
+    expect(list.find((e) => e.test === "Très faible")?.target).toBe(3);
+    expect(list.find((e) => e.test === "Moyen")?.target).toBe(2);
+    expect(list.find((e) => e.test === "Proche")?.target).toBe(1);
+  });
+});
+
+describe("daysLeftInWeek", () => {
+  it("counts today plus the remaining days until Sunday", () => {
+    expect(daysLeftInWeek(new Date(2025, 9, 20))).toBe(7); // lundi
+    expect(daysLeftInWeek(new Date(2025, 9, 22))).toBe(5); // mercredi
+    expect(daysLeftInWeek(new Date(2025, 9, 26))).toBe(1); // dimanche
+  });
+});
+
+describe("getDailyFocus", () => {
+  const noStreak = () => 0;
+  const attempts = (test: string, n: number, stanine: number): TestResult[] =>
+    Array.from({ length: n }, () => ({ test, score: "", stanine, at: "" }));
+  const wednesday = new Date(2025, 9, 22); // 5 jours restants dans la semaine
+
+  it("computes a smoothed daily minimum from the total remaining attempts", () => {
+    const scoreList = [...attempts("Faible A", 1, 3), ...attempts("Faible B", 1, 3)];
+    const entries = getWorkOnList(scoreList, noStreak);
+
+    // Les deux sont "Insuffisant" (objectif 3), rien de fait cette semaine -> 6 restants / 5 jours
+    const focus = getDailyFocus(entries, [], wednesday);
+
+    expect(focus.dailyMinimum).toBe(2);
+  });
+
+  it("prioritizes untouched tests over already-started ones, even with a smaller deficit", () => {
+    const scoreList = [
+      ...attempts("Jamais fait", 1, 6.5), // Proche de l'objectif -> objectif 1
+      ...attempts("Très en retard", 5, 3), // Insuffisant -> objectif 3
+    ];
+    const entries = getWorkOnList(scoreList, noStreak, 10);
+    const weekResults: TestResult[] = [
+      { test: "Très en retard", score: "", stanine: 3, at: "" }, // déjà 1/3 cette semaine
+    ];
+
+    const focus = getDailyFocus(entries, weekResults, wednesday);
+
+    expect(focus.entries.map((e) => e.test)).toEqual(["Jamais fait", "Très en retard"]);
+  });
+
+  it("excludes tests that already reached their weekly target", () => {
+    const scoreList = attempts("Fait", 1, 6.5); // objectif 1
+    const entries = getWorkOnList(scoreList, noStreak);
+    const weekResults: TestResult[] = [{ test: "Fait", score: "", stanine: 6.5, at: "" }];
+
+    const focus = getDailyFocus(entries, weekResults, wednesday);
+
+    expect(focus.entries).toHaveLength(0);
+    expect(focus.dailyMinimum).toBe(0);
   });
 });
 

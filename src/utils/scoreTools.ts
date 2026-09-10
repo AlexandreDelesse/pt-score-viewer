@@ -207,6 +207,16 @@ export type WorkOnEntry = {
   nbAttempts: number;
   reason: string;
   label: "Insuffisant" | "À améliorer" | "Proche de l'objectif";
+  target: number;
+};
+
+// Objectif de tentatives par semaine, calé sur la sévérité (label) : un test
+// franchement insuffisant demande plus de répétition qu'un test déjà proche
+// de l'objectif.
+const WEEKLY_TARGET_BY_LABEL: Record<WorkOnEntry["label"], number> = {
+  Insuffisant: 3,
+  "À améliorer": 2,
+  "Proche de l'objectif": 1,
 };
 
 // Volume de pratique au-delà duquel une faiblesse est considérée "confirmée"
@@ -253,6 +263,7 @@ export const getWorkOnList = (
         nbAttempts,
         reason: getWorkOnReason(nbAttempts),
         label,
+        target: WEEKLY_TARGET_BY_LABEL[label],
       };
 
       return { entry, priority };
@@ -264,6 +275,62 @@ export const getWorkOnList = (
   );
 
   return ranked.slice(0, max).map((r) => r.entry);
+};
+
+// --- Daily focus ---
+
+// Semaine du lundi au dimanche (cohérent avec isDateInWeekOf) : jours
+// restants jusqu'à dimanche inclus, aujourd'hui compté.
+export const daysLeftInWeek = (reference: Date = new Date()): number => {
+  const day = reference.getDay();
+  const isoDay = day === 0 ? 7 : day;
+  return 7 - isoDay + 1;
+};
+
+export type DailyFocusEntry = WorkOnEntry & {
+  done: number;
+  remaining: number;
+};
+
+export type DailyFocus = {
+  entries: DailyFocusEntry[];
+  dailyMinimum: number;
+};
+
+// Le rythme quotidien (dailyMinimum) est un plancher — le minimum de
+// tentatives, tous tests confondus, pour rester dans les temps sur les
+// objectifs hebdo — pas un plafond : la liste remonte tous les tests encore
+// dus, sans troncature, et en faire plus est toujours positif. Les tests
+// jamais retravaillés cette semaine passent devant ceux déjà entamés même
+// très en retard, pour ne jamais en délaisser un au profit d'un rattrapage
+// complet sur un autre.
+export const getDailyFocus = (
+  entries: WorkOnEntry[],
+  weekResults: TestResult[],
+  reference: Date = new Date()
+): DailyFocus => {
+  const daysLeft = daysLeftInWeek(reference);
+
+  const withProgress: DailyFocusEntry[] = entries.map((e) => {
+    const done = weekResults.filter((r) => r.test === e.test).length;
+    return { ...e, done, remaining: Math.max(e.target - done, 0) };
+  });
+
+  const totalRemaining = withProgress.reduce((sum, e) => sum + e.remaining, 0);
+  const dailyMinimum = totalRemaining === 0 ? 0 : Math.ceil(totalRemaining / daysLeft);
+
+  const focusEntries = withProgress
+    .filter((e) => e.remaining > 0)
+    .sort((a, b) => {
+      const aUntouched = a.done === 0 ? 1 : 0;
+      const bUntouched = b.done === 0 ? 1 : 0;
+      if (aUntouched !== bUntouched) return bUntouched - aUntouched;
+      const deficitDiff = b.remaining / daysLeft - a.remaining / daysLeft;
+      if (deficitDiff !== 0) return deficitDiff;
+      return a.meanStanine - b.meanStanine;
+    });
+
+  return { entries: focusEntries, dailyMinimum };
 };
 
 // --- Sort & filter ---
