@@ -16,9 +16,10 @@ const __dirname  = path.dirname(__filename);
 const PORT        = 5000;
 const BASE_URL    = "https://www.pilotest.com";
 const DATA_DIR    = process.env.DATA_DIR ?? __dirname;
-const CONFIG_FILE = path.join(DATA_DIR, "config.json");
-const CACHE_FILE  = path.join(DATA_DIR, "cache.json");
-const DEBUG_DIR   = path.join(DATA_DIR, "debug");
+const CONFIG_FILE     = path.join(DATA_DIR, "config.json");
+const CACHE_FILE      = path.join(DATA_DIR, "cache.json");
+const CATEGORIES_FILE = path.join(DATA_DIR, "categories.json");
+const DEBUG_DIR       = path.join(DATA_DIR, "debug");
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -241,6 +242,17 @@ function saveCacheError(msg) {
   saveJSON(CACHE_FILE, { ...loadCache(), error: msg });
 }
 
+// ── Catégories (psy0/psy1) ────────────────────────────────────────────────────
+// Rangées côté serveur (comme cache.json/config.json) pour que la
+// catégorisation manuelle des tests survive à un changement de support.
+
+function loadCategories() {
+  return loadJSON(CATEGORIES_FILE) ?? {};
+}
+function saveCategories(categories) {
+  saveJSON(CATEGORIES_FILE, categories);
+}
+
 // ── Sync ──────────────────────────────────────────────────────────────────────
 
 const syncState = { running: false, lastError: null };
@@ -316,6 +328,19 @@ const server = http.createServer(async (req, res) => {
     const cache = loadCache();
     if (!cache.results) return jsonRes(res, req, 503, { error: "Aucun résultat en cache. Lancez /sync d'abord." });
     return jsonRes(res, req, 200, { results: cache.results, updated_at: cache.updated_at });
+  }
+
+  if (req.method === "GET" && pathname === "/categories") {
+    return jsonRes(res, req, 200, { categories: loadCategories() });
+  }
+
+  if (req.method === "POST" && pathname === "/categories") {
+    const body = await readBody(req);
+    if (!body.categories || typeof body.categories !== "object" || Array.isArray(body.categories))
+      return jsonRes(res, req, 400, { error: "categories (objet) requis" });
+    saveCategories(body.categories);
+    console.log(`[categories] ${Object.keys(body.categories).length} test(s) catégorisé(s) sauvegardé(s)`);
+    return jsonRes(res, req, 200, { ok: true });
   }
 
   // Liste ou consulte les réponses brutes sauvegardées lors du dernier échec de sync
