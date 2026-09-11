@@ -31,6 +31,11 @@ const STANINE_COLORS = [
 export const getStanineColor = (stanine: number): string =>
   STANINE_COLORS[Math.round(stanine) - 1] ?? "#9e9e9e";
 
+// --- Score percentage ---
+
+// TestResult["score"] est une chaîne fournie telle quelle par Pilotest (ex. "75%").
+export const parseScorePercent = (score: string): number => parseInt(score, 10) || 0;
+
 // --- Date parsing ---
 
 const dateDict = {
@@ -210,12 +215,17 @@ export type WorkOnEntry = {
   target: number;
 };
 
-// Objectif de tentatives par semaine, calé sur la sévérité (label) : un test
-// franchement insuffisant demande plus de répétition qu'un test déjà proche
-// de l'objectif.
+// Objectif de tentatives par semaine, calé sur la sévérité (label). Un vrai
+// départ à froid (Insuffisant) profite d'une pratique quasi quotidienne : les
+// courbes de progression sur des tests d'aptitude cognitive montrent que les
+// plus gros gains arrivent sur les toutes premières répétitions rapprochées
+// (effet de réentraînement), et s'aplatissent vite (loi de puissance de
+// l'apprentissage) — d'où l'intérêt de ne pas sous-doser cette phase. Une
+// fois proche de l'objectif, une seule tentative hebdo suffit à entretenir
+// l'acquis sans tomber dans le sur-apprentissage.
 const WEEKLY_TARGET_BY_LABEL: Record<WorkOnEntry["label"], number> = {
-  Insuffisant: 3,
-  "À améliorer": 2,
+  Insuffisant: 5,
+  "À améliorer": 3,
   "Proche de l'objectif": 1,
 };
 
@@ -234,7 +244,7 @@ const getWorkOnReason = (nbAttempts: number): string =>
 export const getWorkOnList = (
   scoreList: TestResult[],
   getStreak: (test: string) => number,
-  max: number = 5
+  max: number = 8
 ): WorkOnEntry[] => {
   const testNames = [...new Set(scoreList.map((r) => r.test))];
 

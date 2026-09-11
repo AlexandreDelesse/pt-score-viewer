@@ -1,7 +1,12 @@
 import {
   Button,
+  Chip,
   Typography,
   Box,
+  List,
+  ListItem,
+  ListItemText,
+  Stack,
   ToggleButton,
   ToggleButtonGroup,
   useMediaQuery,
@@ -11,6 +16,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
 import type { TestCategory, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
+import { getStanineColor, parseAtDate, parseScorePercent } from "../utils/scoreTools";
 
 interface Props {
   testName: string;
@@ -31,6 +37,11 @@ export default function TestDetailPage({
 }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const stanineColor = theme.palette.primary.main;
+  const percentColor = theme.palette.warning.main;
+  const attemptsByRecent = [...scores].sort(
+    (a, b) => parseAtDate(b.at).getTime() - parseAtDate(a.at).getTime()
+  );
 
   return (
     <PageBloc>
@@ -64,23 +75,76 @@ export default function TestDetailPage({
       <Box mt={1}>
         <LineChart
           grid={{ horizontal: true }}
-          yAxis={[{ min: 1, max: 9 }]}
+          yAxis={[
+            {
+              id: "stanine",
+              min: 1,
+              max: 9,
+              tickLabelStyle: { fill: stanineColor },
+              labelStyle: { fill: stanineColor },
+              label: "Stanine",
+            },
+            {
+              id: "percent",
+              position: "right",
+              min: 0,
+              max: 100,
+              tickLabelStyle: { fill: percentColor },
+              labelStyle: { fill: percentColor },
+              label: "Score (%)",
+            },
+          ]}
           series={[
             {
+              label: "Stanine",
+              curve: "stepAfter",
+              showMark: false,
+              yAxisId: "stanine",
+              color: stanineColor,
+              data: scores.map((r) => r.stanine),
+            },
+            {
+              label: "Score (%)",
               curve: "monotoneX",
               showMark: false,
-              data: scores.map((r) => r.stanine),
+              yAxisId: "percent",
+              color: percentColor,
+              data: scores.map((r) => parseScorePercent(r.score)),
             },
           ]}
           height={isMobile ? 260 : 400}
         >
           <ChartsReferenceLine
+            axisId="stanine"
             y={7}
             label="Objectif Classe 7"
             lineStyle={{ stroke: theme.palette.success.main, strokeWidth: 2 }}
           />
         </LineChart>
       </Box>
+      <Typography variant="subtitle1" fontWeight={600} mt={4} mb={1}>
+        Historique des tentatives
+      </Typography>
+      <List disablePadding>
+        {attemptsByRecent.map((r) => (
+          <ListItem key={`${r.test}__${r.at}`} divider disableGutters>
+            <ListItemText
+              primary={
+                <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+                  <Typography>{r.score}</Typography>
+                  <Chip
+                    label={`Classe ${r.stanine}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ color: getStanineColor(r.stanine), borderColor: getStanineColor(r.stanine) }}
+                  />
+                </Stack>
+              }
+              secondary={r.at}
+            />
+          </ListItem>
+        ))}
+      </List>
     </PageBloc>
   );
 }
