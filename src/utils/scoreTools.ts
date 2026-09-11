@@ -31,6 +31,11 @@ const STANINE_COLORS = [
 export const getStanineColor = (stanine: number): string =>
   STANINE_COLORS[Math.round(stanine) - 1] ?? "#9e9e9e";
 
+// --- Score percentage ---
+
+// TestResult["score"] est une chaîne fournie telle quelle par Pilotest (ex. "75%").
+export const parseScorePercent = (score: string): number => parseInt(score, 10) || 0;
+
 // --- Date parsing ---
 
 const dateDict = {
