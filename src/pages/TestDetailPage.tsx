@@ -1,7 +1,12 @@
 import {
   Button,
+  Chip,
   Typography,
   Box,
+  List,
+  ListItem,
+  ListItemText,
+  Stack,
   ToggleButton,
   ToggleButtonGroup,
   useMediaQuery,
@@ -11,7 +16,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ChartsReferenceLine, LineChart } from "@mui/x-charts";
 import type { TestCategory, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
-import { parseScorePercent } from "../utils/scoreTools";
+import { getStanineColor, parseAtDate, parseScorePercent } from "../utils/scoreTools";
 
 interface Props {
   testName: string;
@@ -34,6 +39,9 @@ export default function TestDetailPage({
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const stanineColor = theme.palette.primary.main;
   const percentColor = theme.palette.warning.main;
+  const attemptsByRecent = [...scores].sort(
+    (a, b) => parseAtDate(b.at).getTime() - parseAtDate(a.at).getTime()
+  );
 
   return (
     <PageBloc>
@@ -114,6 +122,29 @@ export default function TestDetailPage({
           />
         </LineChart>
       </Box>
+      <Typography variant="subtitle1" fontWeight={600} mt={4} mb={1}>
+        Historique des tentatives
+      </Typography>
+      <List disablePadding>
+        {attemptsByRecent.map((r) => (
+          <ListItem key={`${r.test}__${r.at}`} divider disableGutters>
+            <ListItemText
+              primary={
+                <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+                  <Typography>{r.score}</Typography>
+                  <Chip
+                    label={`Classe ${r.stanine}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ color: getStanineColor(r.stanine), borderColor: getStanineColor(r.stanine) }}
+                  />
+                </Stack>
+              }
+              secondary={r.at}
+            />
+          </ListItem>
+        ))}
+      </List>
     </PageBloc>
   );
 }
