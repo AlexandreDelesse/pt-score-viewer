@@ -113,8 +113,8 @@ describe("getWorkOnList", () => {
 
     const list = getWorkOnList(scoreList, noStreak, 10);
 
-    expect(list.find((e) => e.test === "Très faible")?.target).toBe(3);
-    expect(list.find((e) => e.test === "Moyen")?.target).toBe(2);
+    expect(list.find((e) => e.test === "Très faible")?.target).toBe(5);
+    expect(list.find((e) => e.test === "Moyen")?.target).toBe(3);
     expect(list.find((e) => e.test === "Proche")?.target).toBe(1);
   });
 });
@@ -137,7 +137,7 @@ describe("getDailyFocus", () => {
     const scoreList = [...attempts("Faible A", 1, 3), ...attempts("Faible B", 1, 3)];
     const entries = getWorkOnList(scoreList, noStreak);
 
-    // Les deux sont "Insuffisant" (objectif 3), rien de fait cette semaine -> 6 restants / 5 jours
+    // Les deux sont "Insuffisant" (objectif 5), rien de fait cette semaine -> 10 restants / 5 jours
     const focus = getDailyFocus(entries, [], wednesday);
 
     expect(focus.dailyMinimum).toBe(2);
@@ -146,11 +146,11 @@ describe("getDailyFocus", () => {
   it("prioritizes untouched tests over already-started ones, even with a smaller deficit", () => {
     const scoreList = [
       ...attempts("Jamais fait", 1, 6.5), // Proche de l'objectif -> objectif 1
-      ...attempts("Très en retard", 5, 3), // Insuffisant -> objectif 3
+      ...attempts("Très en retard", 5, 3), // Insuffisant -> objectif 5
     ];
     const entries = getWorkOnList(scoreList, noStreak, 10);
     const weekResults: TestResult[] = [
-      { test: "Très en retard", score: "", stanine: 3, at: "" }, // déjà 1/3 cette semaine
+      { test: "Très en retard", score: "", stanine: 3, at: "" }, // déjà 1/5 cette semaine
     ];
 
     const focus = getDailyFocus(entries, weekResults, wednesday);
