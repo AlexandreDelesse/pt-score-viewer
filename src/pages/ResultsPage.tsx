@@ -13,7 +13,12 @@ import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
 import useScoreDerived from "../hooks/useScoreDerived";
 import useExamGoal from "../hooks/useExamGoal";
-import { countNewResults, filterByCategory, type CategoryFilter } from "../utils/scoreTools";
+import {
+  countNewResults,
+  filterByCategory,
+  parseScorePercent,
+  type CategoryFilter,
+} from "../utils/scoreTools";
 
 interface Props {
   scoreList: TestResult[];
@@ -56,6 +61,11 @@ export default function ResultsPage({
     if (!attempts.length) return null;
     return attempts.reduce((best, r) => (parseInt(r.score) > parseInt(best.score) ? r : best)).score;
   };
+
+  // Historique chronologique des scores (%) d'un test, pour la sparkline de
+  // la card — filteredScoreList est déjà trié du plus ancien au plus récent.
+  const getScoreHistory = (testName: string): number[] =>
+    filteredScoreList.filter((r) => r.test === testName).map((r) => parseScorePercent(r.score)).slice(-10);
 
   const handleTestClick = (t: TestResult) => onTestClick(t.test);
 
@@ -117,6 +127,7 @@ export default function ResultsPage({
       <PtResultList
         nbOfTest={getNbOfResults}
         getBestScore={getBestScore}
+        getScoreHistory={getScoreHistory}
         onClick={handleTestClick}
         ptResults={meanStanineList}
         trendMap={trendMap}

@@ -1,16 +1,19 @@
 import type { TestResult } from "../../types/testResult";
-import { Box, Card, CardActionArea, Chip, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Card, CardActionArea, Chip, IconButton, Stack, Typography, useTheme } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import { getStanineColor, testNameToSlug } from "../../utils/scoreTools";
 
 interface Props {
   test: TestResult;
   nbOfTest: number;
   bestScore: string | null;
+  scoreHistory: number[];
   onClick: (t: TestResult) => void;
 }
 
-function PtResultListItem({ test, onClick, nbOfTest, bestScore }: Props) {
+function PtResultListItem({ test, onClick, nbOfTest, bestScore, scoreHistory }: Props) {
+  const theme = useTheme();
   return (
     <Card sx={{ width: "100%", height: "100%" }}>
       <CardActionArea sx={{ p: 1.5, height: "100%" }} onClick={() => onClick(test)}>
@@ -40,7 +43,20 @@ function PtResultListItem({ test, onClick, nbOfTest, bestScore }: Props) {
             }}
           />
         </Box>
-        <Stack direction="row" justifyContent="flex-end" alignItems="center" mt={1}>
+        <Stack direction="row" alignItems="center" mt={1} gap={0.5}>
+          {scoreHistory.length > 1 && (
+            <Box flexGrow={1} minWidth={0} sx={{ opacity: 0.55 }}>
+              <SparkLineChart
+                data={scoreHistory}
+                curve="monotoneX"
+                height={28}
+                color={theme.palette.text.secondary}
+                showTooltip={false}
+                showHighlight={false}
+              />
+            </Box>
+          )}
+          <Box flexGrow={scoreHistory.length > 1 ? 0 : 1} />
           <IconButton
             size="small"
             component="a"
