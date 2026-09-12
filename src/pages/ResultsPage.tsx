@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Button, Box, Chip, Snackbar, Stack } from "@mui/material";
+import { Alert, Button, Box, Chip, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
 import Save from "@mui/icons-material/Save";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
@@ -36,6 +36,8 @@ const CATEGORY_LABELS: Record<CategoryFilter, string> = {
 
 const CATEGORY_FILTERS: CategoryFilter[] = ["all", "psy0", "psy1"];
 
+type ResultsTab = "dashboard" | "list";
+
 export default function ResultsPage({
   scoreList,
   updateScoreList,
@@ -44,6 +46,7 @@ export default function ResultsPage({
   categories,
 }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [tab, setTab] = useState<ResultsTab>("dashboard");
   const [newResultsCount, setNewResultsCount] = useState<number | null>(null);
   const [openPeriod, setOpenPeriod] = useState<ResumePeriod | null>(null);
   const { examGoal, setExamGoal } = useExamGoal();
@@ -107,31 +110,53 @@ export default function ResultsPage({
         </Stack>
       )}
 
-      {scoreList.length > 0 && (
-        <ExamGoalPanel
-          meanStanineList={meanStanineList}
-          getNbOfResults={getNbOfResults}
-          onSelectTest={handleTestClick}
-          examGoal={examGoal}
-          onExamGoalChange={setExamGoal}
-        />
+      {scoreList.length === 0 && (
+        <Box mt={5}>
+          <Typography textAlign="center">
+            Importer un fichier JSON PiloteTest pour afficher les résultats !
+          </Typography>
+        </Box>
       )}
-      <PtResultNbResume
-        totalResults={totalResume.totalScore}
-        totalDayResult={totalResume.totalTodayScore}
-        totalWeekResult={totalResume.totalWeekScore}
-        onSelect={setOpenPeriod}
-      />
-      <TodayFocusPanel entries={dailyFocus.entries} dailyMinimum={dailyFocus.dailyMinimum} />
-      <WorkOnPanel entries={workOnList} weekResults={weekResults} />
-      <PtResultList
-        nbOfTest={getNbOfResults}
-        getBestScore={getBestScore}
-        getScoreHistory={getScoreHistory}
-        onClick={handleTestClick}
-        ptResults={meanStanineList}
-        trendMap={trendMap}
-      />
+
+      {scoreList.length > 0 && (
+        <>
+          <Tabs value={tab} onChange={(_, v: ResultsTab) => setTab(v)} sx={{ mb: 2 }}>
+            <Tab label="Dashboard" value="dashboard" />
+            <Tab label="Liste" value="list" />
+          </Tabs>
+
+          {tab === "dashboard" && (
+            <>
+              <ExamGoalPanel
+                meanStanineList={meanStanineList}
+                getNbOfResults={getNbOfResults}
+                onSelectTest={handleTestClick}
+                examGoal={examGoal}
+                onExamGoalChange={setExamGoal}
+              />
+              <PtResultNbResume
+                totalResults={totalResume.totalScore}
+                totalDayResult={totalResume.totalTodayScore}
+                totalWeekResult={totalResume.totalWeekScore}
+                onSelect={setOpenPeriod}
+              />
+              <TodayFocusPanel entries={dailyFocus.entries} dailyMinimum={dailyFocus.dailyMinimum} />
+              <WorkOnPanel entries={workOnList} weekResults={weekResults} />
+            </>
+          )}
+
+          {tab === "list" && (
+            <PtResultList
+              nbOfTest={getNbOfResults}
+              getBestScore={getBestScore}
+              getScoreHistory={getScoreHistory}
+              onClick={handleTestClick}
+              ptResults={meanStanineList}
+              trendMap={trendMap}
+            />
+          )}
+        </>
+      )}
 
       <Snackbar
         open={newResultsCount !== null}
