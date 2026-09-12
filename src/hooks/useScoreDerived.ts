@@ -4,7 +4,7 @@ import {
   filterByHighestStanine,
   getStanineStreak,
   meanStanineOnLastFive,
-  getWorkOnList,
+  getActiveWorkOnList,
   getDailyFocus,
   buildTrendMap,
   parseAtDate,
@@ -29,7 +29,10 @@ export default function useScoreDerived(scoreList: TestResult[]) {
 
     const todayResults = scoreList.filter((s) => isSameDay(parseAtDate(s.at), now));
     const weekResults = scoreList.filter((s) => isDateInWeekOf(s.at, now));
-    const workOnList = getWorkOnList(scoreList, getStreak);
+    // Recalculé en direct à chaque instant, mais sans perdre les tests déjà
+    // entamés cette semaine s'ils sortent du classement des faiblesses en
+    // cours de route (voir getActiveWorkOnList).
+    const workOnList = getActiveWorkOnList(scoreList, weekResults, getStreak);
 
     return {
       highestStanineList: filterByHighestStanine(scoreList),

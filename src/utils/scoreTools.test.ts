@@ -5,6 +5,7 @@ import {
   daysUntil,
   daysLeftInWeek,
   filterByCategory,
+  getActiveWorkOnList,
   getDailyFocus,
   getStanineStreak,
   getWorkOnList,
@@ -116,6 +117,45 @@ describe("getWorkOnList", () => {
     expect(list.find((e) => e.test === "Très faible")?.target).toBe(5);
     expect(list.find((e) => e.test === "Moyen")?.target).toBe(3);
     expect(list.find((e) => e.test === "Proche")?.target).toBe(1);
+  });
+});
+
+describe("getActiveWorkOnList", () => {
+  const noStreak = () => 0;
+  const attempts = (test: string, n: number, stanine: number): TestResult[] =>
+    Array.from({ length: n }, () => ({ test, score: "", stanine, at: "" }));
+
+  it("keeps a test visible after it improves past the top-N cut, crediting the attempts already made", () => {
+    // 5 autres tests bien plus faibles repoussent "Test A" hors du top 5 dès
+    // que sa moyenne remonte suite à la tentative de cette semaine.
+    const others = Array.from({ length: 5 }, (_, i) => attempts(`Autre ${i}`, 5, 2)).flat();
+    const scoreList = [...others, ...attempts("Test A", 1, 9)];
+    const weekResults: TestResult[] = [{ test: "Test A", score: "", stanine: 9, at: "" }];
+
+    expect(getWorkOnList(scoreList, noStreak, 5).some((e) => e.test === "Test A")).toBe(false);
+
+    const active = getActiveWorkOnList(scoreList, weekResults, noStreak, 5);
+    const entry = active.find((e) => e.test === "Test A");
+
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe("Proche de l'objectif");
+    expect(entry?.target).toBe(1);
+  });
+
+  it("does not resurrect a mastered test that was not worked on this week", () => {
+    const scoreList = attempts("Test maîtrisé", 5, 9);
+
+    const active = getActiveWorkOnList(scoreList, [], noStreak, 5);
+
+    expect(active).toHaveLength(0);
+  });
+
+  it("matches the live ranking when nothing was started outside of it", () => {
+    const scoreList = attempts("Faible", 5, 3);
+
+    const active = getActiveWorkOnList(scoreList, [], noStreak, 5);
+
+    expect(active.map((e) => e.test)).toEqual(["Faible"]);
   });
 });
 

@@ -241,6 +241,12 @@ const getWorkOnReason = (nbAttempts: number): string =>
     ? `Faiblesse confirmée sur ${nbAttempts} tentatives`
     : `Encore peu de données (${nbAttempts} tentative${nbAttempts > 1 ? "s" : ""})`;
 
+const labelForMean = (mean: number): WorkOnEntry["label"] => {
+  if (mean < 5) return "Insuffisant";
+  if (mean < 6) return "À améliorer";
+  return "Proche de l'objectif";
+};
+
 export const getWorkOnList = (
   scoreList: TestResult[],
   getStreak: (test: string) => number,
@@ -255,11 +261,7 @@ export const getWorkOnList = (
       const lastFive = forTest.slice(-5).map((r) => r.stanine);
       const mean = computeMean(lastFive);
       const streak = getStreak(name);
-
-      let label: WorkOnEntry["label"];
-      if (mean < 5) label = "Insuffisant";
-      else if (mean < 6) label = "À améliorer";
-      else label = "Proche de l'objectif";
+      const label = labelForMean(mean);
 
       const severity = 7 - mean;
       const confirmedWeaknessBoost =
@@ -341,6 +343,48 @@ export const getDailyFocus = (
     });
 
   return { entries: focusEntries, dailyMinimum };
+};
+
+// getWorkOnList ne renvoie que les tests actuellement faibles, plafonnés à
+// `max` : un test entamé cette semaine puis amélioré (ou simplement dépassé
+// au classement par d'autres tests plus faibles) en sort purement et
+// simplement, avec la progression déjà faite dessus. getActiveWorkOnList
+// recalcule tout en direct à chaque appel (rien n'est figé, l'historique
+// complet — y compris les tentatives d'aujourd'hui — est pris en compte à
+// chaque instant) mais rajoute ces tests déjà entamés, pour que le suivi
+// (objectif visé, fait, restant) reste visible jusqu'à ce que l'objectif soit
+// atteint plutôt que de disparaître sans laisser de trace.
+export const getActiveWorkOnList = (
+  scoreList: TestResult[],
+  weekResults: TestResult[],
+  getStreak: (test: string) => number,
+  max: number = 5
+): WorkOnEntry[] => {
+  const liveList = getWorkOnList(scoreList, getStreak, max);
+  const liveNames = new Set(liveList.map((e) => e.test));
+
+  const startedNames = [...new Set(weekResults.map((r) => r.test))].filter(
+    (name) => !liveNames.has(name)
+  );
+  if (!startedNames.length) return liveList;
+
+  const extra = startedNames.map((name): WorkOnEntry => {
+    const forTest = scoreList.filter((r) => r.test === name);
+    const nbAttempts = forTest.length;
+    const mean = computeMean(forTest.slice(-5).map((r) => r.stanine));
+    const label = labelForMean(mean);
+    return {
+      test: name,
+      meanStanine: mean,
+      streak: getStreak(name),
+      nbAttempts,
+      reason: getWorkOnReason(nbAttempts),
+      label,
+      target: WEEKLY_TARGET_BY_LABEL[label],
+    };
+  });
+
+  return [...liveList, ...extra];
 };
 
 // --- Sort & filter ---
