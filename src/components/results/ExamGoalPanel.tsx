@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Box,
   Button,
   ButtonBase,
   Chip,
@@ -19,9 +18,11 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import CloseIcon from "@mui/icons-material/Close";
+import EventIcon from "@mui/icons-material/Event";
 import type { TestResult } from "../../types/testResult";
 import type { ExamGoal } from "../../hooks/useExamGoal";
 import { daysUntil, getStanineColor } from "../../utils/scoreTools";
+import DashboardCard from "../layout/DashboardCard";
 
 // Une classe stanine < 5 correspond au label "Insuffisant" de getWorkOnList —
 // c'est le jalon que l'utilisateur veut voir descendre à 0 avant l'épreuve.
@@ -79,53 +80,46 @@ function ExamGoalPanel({
   };
 
   return (
-    <Box
-      sx={{
-        border: 1,
-        borderColor: "divider",
-        borderRadius: 2,
-        p: 2,
-        mb: 2,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 2,
-      }}
+    <DashboardCard
+      icon={<EventIcon fontSize="small" />}
+      title="Épreuve"
+      action={
+        <IconButton size="small" onClick={openEditDialog} sx={{ ml: "auto", p: 0.25 }}>
+          <EditIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+      }
     >
-      <Stack>
-        <Stack direction="row" alignItems="center" gap={0.5}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+        <Stack>
           <Typography variant="caption" color="text.secondary">
-            Épreuve du {formatDate(examGoal.start)} au {formatDate(examGoal.end)}
+            Du {formatDate(examGoal.start)} au {formatDate(examGoal.end)}
           </Typography>
-          <IconButton size="small" onClick={openEditDialog} sx={{ p: 0.25 }}>
-            <EditIcon sx={{ fontSize: 14 }} />
-          </IconButton>
+          <Typography variant="h4" fontWeight={700} color="primary.main">
+            {countdownLabel(examGoal.start, examGoal.end)}
+          </Typography>
         </Stack>
-        <Typography variant="h5" fontWeight={600}>
-          {countdownLabel(examGoal.start, examGoal.end)}
-        </Typography>
+
+        <Divider orientation="vertical" flexItem />
+
+        <ButtonBase
+          onClick={() => setListOpen(true)}
+          disabled={insufficientTests.length === 0}
+          sx={{ borderRadius: 1, p: 1 }}
+        >
+          <Stack alignItems="center">
+            <Typography variant="caption" color="text.secondary">
+              À travailler → objectif 0
+            </Typography>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              color={insufficientTests.length > 0 ? "error.main" : "success.main"}
+            >
+              {insufficientTests.length}
+            </Typography>
+          </Stack>
+        </ButtonBase>
       </Stack>
-
-      <Divider orientation="vertical" flexItem />
-
-      <ButtonBase
-        onClick={() => setListOpen(true)}
-        disabled={insufficientTests.length === 0}
-        sx={{ borderRadius: 1, p: 1 }}
-      >
-        <Stack alignItems="center">
-          <Typography variant="caption" color="text.secondary">
-            À travailler → objectif 0
-          </Typography>
-          <Typography
-            variant="h5"
-            fontWeight={600}
-            color={insufficientTests.length > 0 ? "error.main" : "success.main"}
-          >
-            {insufficientTests.length}
-          </Typography>
-        </Stack>
-      </ButtonBase>
 
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle>Dates de l'épreuve</DialogTitle>
@@ -193,7 +187,7 @@ function ExamGoalPanel({
           </List>
         </DialogContent>
       </Dialog>
-    </Box>
+    </DashboardCard>
   );
 }
 
