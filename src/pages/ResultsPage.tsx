@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Alert, Button, Box, Chip, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Alert, Button, Box, Chip, Grid, Snackbar, Stack, Tab, Tabs, Typography } from "@mui/material";
 import Save from "@mui/icons-material/Save";
 import type { TestCategoryMap, TestResult } from "../types/testResult";
 import PageBloc from "../components/layout/PageBloc";
 import PtResultNbResume, { type ResumePeriod } from "../components/results/PtResultNbResume";
 import PeriodResultsDialog from "../components/results/PeriodResultsDialog";
 import ExamGoalPanel from "../components/results/ExamGoalPanel";
-import WorkOnPanel from "../components/results/WorkOnPanel";
-import TodayFocusPanel from "../components/results/TodayFocusPanel";
+import WeeklyProgressPanel from "../components/results/WeeklyProgressPanel";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
@@ -126,23 +125,26 @@ export default function ResultsPage({
           </Tabs>
 
           {tab === "dashboard" && (
-            <>
-              <ExamGoalPanel
-                meanStanineList={meanStanineList}
-                getNbOfResults={getNbOfResults}
-                onSelectTest={handleTestClick}
-                examGoal={examGoal}
-                onExamGoalChange={setExamGoal}
-              />
-              <PtResultNbResume
-                totalResults={totalResume.totalScore}
-                totalDayResult={totalResume.totalTodayScore}
-                totalWeekResult={totalResume.totalWeekScore}
-                onSelect={setOpenPeriod}
-              />
-              <TodayFocusPanel entries={dailyFocus.entries} dailyMinimum={dailyFocus.dailyMinimum} />
-              <WorkOnPanel entries={workOnList} weekResults={weekResults} />
-            </>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 5 }}>
+                <ExamGoalPanel
+                  meanStanineList={meanStanineList}
+                  getNbOfResults={getNbOfResults}
+                  onSelectTest={handleTestClick}
+                  examGoal={examGoal}
+                  onExamGoalChange={setExamGoal}
+                />
+                <PtResultNbResume
+                  totalResults={totalResume.totalScore}
+                  totalDayResult={totalResume.totalTodayScore}
+                  totalWeekResult={totalResume.totalWeekScore}
+                  onSelect={setOpenPeriod}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 7 }}>
+                <WeeklyProgressPanel entries={workOnList} weekResults={weekResults} dailyFocus={dailyFocus} />
+              </Grid>
+            </Grid>
           )}
 
           {tab === "list" && (
