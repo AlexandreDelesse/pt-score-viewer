@@ -33,8 +33,7 @@ interface MutationResponse {
 }
 
 interface ConfigurePayload {
-  email:    string;
-  password: string;
+  cookie: string;
 }
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
@@ -59,11 +58,11 @@ const api = {
     return data;
   },
 
-  configure: async ({ email, password }: ConfigurePayload): Promise<MutationResponse> => {
+  configure: async ({ cookie }: ConfigurePayload): Promise<MutationResponse> => {
     const r = await fetch(`${SERVER}/configure`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email, password }),
+      body:    JSON.stringify({ cookie }),
     });
     const data: MutationResponse = await r.json();
     if (!data.ok) throw new Error(data.error ?? "Erreur configuration");
@@ -145,7 +144,6 @@ export default function usePilotestSync() {
 
     // Actions
     sync:      () => syncMutation.mutate(),
-    configure: (email: string, password: string) =>
-      configureMutation.mutate({ email, password }),
+    configure: (cookie: string) => configureMutation.mutate({ cookie }),
   };
 }
