@@ -80,7 +80,12 @@ export default function ResultsPage({
   return (
     <PageBloc>
       <Box display="flex" flexWrap="wrap" gap={1} my={2} alignItems="flex-start">
-        <JsonImportButton onImport={updateScoreList} />
+        <JsonImportButton
+          onImport={(results) => {
+            updateScoreList(results);
+            save(results);
+          }}
+        />
         {scoreList.length > 0 && (
           <Button color="primary" variant="contained" onClick={() => save()}>
             <Save />
