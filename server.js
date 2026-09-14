@@ -284,6 +284,18 @@ const server = http.createServer(async (req, res) => {
     return jsonRes(res, req, 200, { results: cache.results, updated_at: cache.updated_at });
   }
 
+  // Enregistre des résultats fournis directement par le client (import JSON manuel),
+  // dans le même cache que la sync pilotest.com — pour qu'ils survivent à un
+  // changement de navigateur/appareil, pas seulement au localStorage local.
+  if (req.method === "POST" && pathname === "/results") {
+    const body = await readBody(req);
+    if (!Array.isArray(body.results))
+      return jsonRes(res, req, 400, { error: "results (tableau) requis" });
+    saveCache(body.results);
+    console.log(`[import] ${body.results.length} résultat(s) enregistré(s) manuellement`);
+    return jsonRes(res, req, 200, { ok: true, message: "Résultats enregistrés" });
+  }
+
   if (req.method === "GET" && pathname === "/categories") {
     return jsonRes(res, req, 200, { categories: loadCategories() });
   }

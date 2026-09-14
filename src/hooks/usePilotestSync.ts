@@ -84,7 +84,27 @@ const api = {
     if (!data.ok) throw new Error(data.error ?? "Erreur configuration");
     return data;
   },
+
+  importResults: async (results: TestResult[]): Promise<MutationResponse> => {
+    const r = await fetch(`${SERVER}/results`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ results }),
+    });
+    const data: MutationResponse = await r.json();
+    if (!data.ok) throw new Error(data.error ?? "Erreur d'enregistrement des résultats");
+    return data;
+  },
 };
+
+// Enregistre des résultats importés manuellement dans le même cache serveur que
+// la sync pilotest.com (server.js POST /results) — pour qu'ils survivent à un
+// changement de navigateur/appareil, comme le fait déjà la sync. Fonction
+// autonome (pas via le hook) : appelable depuis n'importe quel composant sans
+// déclencher les effets (auto-sync, pont extension) de usePilotestSync.
+export async function importResultsToServer(results: TestResult[]): Promise<void> {
+  await api.importResults(results);
+}
 
 // ── Hook principal ────────────────────────────────────────────────────────────
 
