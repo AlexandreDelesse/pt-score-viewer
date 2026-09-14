@@ -20,8 +20,17 @@ interface Props {
 }
 
 export default function SyncButton({ onSyncComplete }: Props) {
-  const { results, isSyncing, isConfigured, serverDown, sync, configure, error, updatedAt } =
-    usePilotestSync();
+  const {
+    results,
+    isSyncing,
+    isConfigured,
+    serverDown,
+    sync,
+    configure,
+    error,
+    updatedAt,
+    hasBrowserBridge,
+  } = usePilotestSync();
   const [open, setOpen] = useState(false);
   const [cookie, setCookie] = useState("");
 
@@ -97,21 +106,35 @@ export default function SyncButton({ onSyncComplete }: Props) {
             contrôle anti-robot (Cloudflare Turnstile) : un login automatique
             avec email/mot de passe n&apos;est plus possible. Il faut copier
             la session d&apos;un navigateur où tu t&apos;es connecté
-            toi-même :
-            <ol style={{ margin: "8px 0 0", paddingLeft: 20 }}>
-              <li>Connecte-toi normalement sur pilotest.com.</li>
-              <li>
-                Ouvre les outils de développement (F12) → onglet
-                Réseau/Network.
-              </li>
-              <li>
-                Recharge la page, clique sur une requête vers pilotest.com,
-                et copie la valeur de l&apos;en-tête de requête{" "}
-                <code>Cookie</code>.
-              </li>
-              <li>Colle-la ci-dessous.</li>
-            </ol>
+            toi-même.
           </Alert>
+          {hasBrowserBridge ? (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Extension détectée : connecte-toi simplement sur pilotest.com
+              dans un onglet, puis recharge cette page — la session sera
+              récupérée automatiquement, sans rien coller ici.
+            </Alert>
+          ) : (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Astuce : installe l&apos;extension navigateur du projet
+              (dossier <code>extension/</code>) pour que ce champ se remplisse
+              tout seul dès que tu te connectes sur pilotest.com. Sinon,
+              récupère le cookie à la main :
+              <ol style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+                <li>Connecte-toi normalement sur pilotest.com.</li>
+                <li>
+                  Ouvre les outils de développement (F12) → onglet
+                  Réseau/Network.
+                </li>
+                <li>
+                  Recharge la page, clique sur une requête vers
+                  pilotest.com, et copie la valeur de l&apos;en-tête de
+                  requête <code>Cookie</code>.
+                </li>
+                <li>Colle-la ci-dessous.</li>
+              </ol>
+            </Alert>
+          )}
           <TextField
             label="Cookie de session"
             placeholder="_pilotest_session=...; remember_user_token=..."

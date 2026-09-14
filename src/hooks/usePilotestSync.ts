@@ -5,7 +5,7 @@
  *   const { results, isLoading, isSyncing, error, sync, configure } = usePilotestSync()
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TestResult } from "../types/testResult";
 
@@ -34,6 +34,22 @@ interface MutationResponse {
 
 interface ConfigurePayload {
   cookie: string;
+}
+
+interface PilotestCookieMessage {
+  source: "pt-score-viewer-extension";
+  type:   "PILOTEST_COOKIE";
+  cookie: string;
+}
+
+function isPilotestCookieMessage(data: unknown): data is PilotestCookieMessage {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    d.source === "pt-score-viewer-extension" &&
+    d.type === "PILOTEST_COOKIE" &&
+    typeof d.cookie === "string"
+  );
 }
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
@@ -124,6 +140,33 @@ export default function usePilotestSync() {
     },
   });
 
+  // Pont navigateur (extension) : content.js marque le document dès son
+  // injection si l'extension est installée. Si elle est là, on lui demande le
+  // cookie pilotest.com à chaque chargement et on l'applique automatiquement
+  // dès qu'il arrive — inutile de le copier à la main.
+  const [hasBrowserBridge] = useState(
+    () => document.documentElement.dataset.ptCookieBridge === "1"
+  );
+
+  useEffect(() => {
+    if (!hasBrowserBridge) return;
+
+    function handleMessage(e: MessageEvent) {
+      if (e.source !== window) return;
+      if (!isPilotestCookieMessage(e.data)) return;
+      const cookie = e.data.cookie.trim();
+      if (cookie) configureMutation.mutate({ cookie });
+    }
+
+    window.addEventListener("message", handleMessage);
+    window.postMessage(
+      { source: "pt-score-viewer", type: "REQUEST_PILOTEST_COOKIE" },
+      window.location.origin
+    );
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasBrowserBridge]);
+
   return {
     // Données
     results:   resultsQuery.data ?? null,
@@ -134,6 +177,7 @@ export default function usePilotestSync() {
     isSyncing,
     isConfigured,
     serverDown:   statusQuery.isError,
+    hasBrowserBridge,
 
     // Erreurs
     error: syncMutation.error?.message
