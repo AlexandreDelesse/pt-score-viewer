@@ -10,6 +10,7 @@ import WeeklyProgressPanel from "../components/results/WeeklyProgressPanel";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
+import { importResultsToServer } from "../hooks/usePilotestSync";
 import useScoreDerived from "../hooks/useScoreDerived";
 import useExamGoal from "../hooks/useExamGoal";
 import {
@@ -48,6 +49,7 @@ export default function ResultsPage({
   const [tab, setTab] = useState<ResultsTab>("dashboard");
   const [newResultsCount, setNewResultsCount] = useState<number | null>(null);
   const [openPeriod, setOpenPeriod] = useState<ResumePeriod | null>(null);
+  const [importServerError, setImportServerError] = useState<string | null>(null);
   const { examGoal, setExamGoal } = useExamGoal();
 
   const filteredScoreList = filterByCategory(scoreList, categories, categoryFilter);
@@ -84,6 +86,12 @@ export default function ResultsPage({
           onImport={(results) => {
             updateScoreList(results);
             save(results);
+            setImportServerError(null);
+            importResultsToServer(results).catch((e: unknown) => {
+              setImportServerError(
+                e instanceof Error ? e.message : "Échec de l'enregistrement sur le serveur"
+              );
+            });
           }}
         />
         {scoreList.length > 0 && (
@@ -99,6 +107,16 @@ export default function ResultsPage({
           }}
         />
       </Box>
+
+      {importServerError && (
+        <Alert
+          severity="warning"
+          onClose={() => setImportServerError(null)}
+          sx={{ mb: 2 }}
+        >
+          Import enregistré localement, mais pas sur le serveur : {importServerError}
+        </Alert>
+      )}
 
       {scoreList.length > 0 && (
         <Stack direction="row" flexWrap="wrap" gap={1} mb={2}>
