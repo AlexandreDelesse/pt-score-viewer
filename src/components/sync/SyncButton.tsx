@@ -20,11 +20,19 @@ interface Props {
 }
 
 export default function SyncButton({ onSyncComplete }: Props) {
-  const { results, isSyncing, isConfigured, serverDown, sync, configure, error, updatedAt } =
-    usePilotestSync();
+  const {
+    results,
+    isSyncing,
+    isConfigured,
+    serverDown,
+    sync,
+    configure,
+    error,
+    updatedAt,
+    hasBrowserBridge,
+  } = usePilotestSync();
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [cookie, setCookie] = useState("");
 
   // Toujours appeler la dernière version de onSyncComplete (elle capture le
   // scoreList courant du parent pour calculer les nouveautés) sans pour autant
@@ -40,10 +48,9 @@ export default function SyncButton({ onSyncComplete }: Props) {
   }, [results]);
 
   const handleSubmit = () => {
-    configure(email, password);
+    configure(cookie);
     setOpen(false);
-    setEmail("");
-    setPassword("");
+    setCookie("");
   };
 
   const handleSyncClick = () => {
@@ -80,7 +87,7 @@ export default function SyncButton({ onSyncComplete }: Props) {
         </Tooltip>
         {isConfigured && (
           <Button size="small" onClick={() => setOpen(true)}>
-            Modifier les identifiants
+            Modifier la session
           </Button>
         )}
       </Box>
@@ -91,35 +98,58 @@ export default function SyncButton({ onSyncComplete }: Props) {
         </Alert>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Synchroniser pilotest.com</DialogTitle>
         <DialogContent>
+          <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
+            Pilotest.com protège désormais sa page de connexion par un
+            contrôle anti-robot (Cloudflare Turnstile) : un login automatique
+            avec email/mot de passe n&apos;est plus possible. Il faut copier
+            la session d&apos;un navigateur où tu t&apos;es connecté
+            toi-même.
+          </Alert>
+          {hasBrowserBridge ? (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Extension détectée : connecte-toi simplement sur pilotest.com
+              dans un onglet, puis recharge cette page — la session sera
+              récupérée automatiquement, sans rien coller ici.
+            </Alert>
+          ) : (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Astuce : installe l&apos;extension navigateur du projet
+              (dossier <code>extension/</code>) pour que ce champ se remplisse
+              tout seul dès que tu te connectes sur pilotest.com. Sinon,
+              récupère le cookie à la main :
+              <ol style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+                <li>Connecte-toi normalement sur pilotest.com.</li>
+                <li>
+                  Ouvre les outils de développement (F12) → onglet
+                  Réseau/Network.
+                </li>
+                <li>
+                  Recharge la page, clique sur une requête vers
+                  pilotest.com, et copie la valeur de l&apos;en-tête de
+                  requête <code>Cookie</code>.
+                </li>
+                <li>Colle-la ci-dessous.</li>
+              </ol>
+            </Alert>
+          )}
           <TextField
-            label="Email"
-            type="email"
+            label="Cookie de session"
+            placeholder="_pilotest_session=...; remember_user_token=..."
             fullWidth
+            multiline
+            minRows={3}
             margin="normal"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={cookie}
+            onChange={(e) => setCookie(e.target.value)}
             autoComplete="off"
-            inputProps={{ autoComplete: "off" }}
           />
-          <TextField
-            label="Mot de passe"
-            type="password"
-            fullWidth
-            margin="normal"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="off"
-            inputProps={{ autoComplete: "new-password" }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && email && password) handleSubmit();
-            }}
-          />
-          <Alert severity="info" sx={{ mt: 1 }}>
-            Les identifiants sont transmis au serveur local uniquement. Ils ne
-            sont jamais stockés dans l&apos;appli.
+          <Alert severity="warning" sx={{ mt: 1 }}>
+            Le cookie est transmis au serveur local uniquement, jamais stocké
+            dans l&apos;appli. Il expirera au bout d&apos;un moment : il
+            faudra alors en recoller un nouveau.
           </Alert>
         </DialogContent>
         <DialogActions>
@@ -127,7 +157,7 @@ export default function SyncButton({ onSyncComplete }: Props) {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={!email || !password}
+            disabled={!cookie.trim()}
           >
             Synchroniser
           </Button>

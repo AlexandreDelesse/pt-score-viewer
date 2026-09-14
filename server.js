@@ -49,10 +49,24 @@ function saveDebug(name, content) {
 // ── Pilotest client ───────────────────────────────────────────────────────────
 
 class PilotestClient {
-  constructor(email, password) {
-    this.email    = email;
-    this.password = password;
-    this.cookies  = {};
+  // `cookieHeader` : valeur brute de l'en-tête Cookie copiée depuis un navigateur
+  // où l'utilisateur s'est connecté normalement (voir _loadCookieHeader). Depuis
+  // que pilotest.com protège /fr/users/sign_in par un Cloudflare Turnstile, un
+  // login scripté (POST email/mot de passe sans navigateur) ne peut plus aboutir
+  // — seule une session obtenue via un vrai navigateur fonctionne.
+  constructor(cookieHeader) {
+    this.cookies = {};
+    if (cookieHeader) this._loadCookieHeader(cookieHeader);
+  }
+
+  _loadCookieHeader(header) {
+    for (const pair of header.split(";")) {
+      const eqIdx = pair.indexOf("=");
+      if (eqIdx === -1) continue;
+      const k = pair.slice(0, eqIdx).trim();
+      const v = pair.slice(eqIdx + 1).trim();
+      if (k) this.cookies[k] = v;
+    }
   }
 
   _cookieHeader() {
@@ -105,45 +119,6 @@ class PilotestClient {
     return r;
   }
 
-  async _post(url, formData) {
-    const body = new URLSearchParams(formData).toString();
-    // redirect: "manual" pour capturer le cookie de session posé lors du redirect post-login
-    const r = await fetch(url, {
-      method:  "POST",
-      headers: {
-        "User-Agent":   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Cookie":       this._cookieHeader(),
-      },
-      body,
-      redirect: "manual",
-    });
-    this._storeCookies(r);
-    console.log(`[fetch] POST ${url} → ${r.status}`);
-
-    // Suit la redirection post-login
-    if (r.status >= 300 && r.status < 400) {
-      const location = r.headers.get("location");
-      if (location) {
-        const next = location.startsWith("http") ? location : BASE_URL + location;
-        console.log(`[redirect] POST → ${next}`);
-        return this._get(next);
-      }
-    }
-    return r;
-  }
-
-  // Cherche le token CSRF soit dans le champ caché du formulaire (ancien schéma Rails),
-  // soit dans la balise <meta name="csrf-token"> (schéma utilisé par Turbo/UJS) —
-  // le site a pu migrer de l'un à l'autre.
-  _extractCSRF(html) {
-    const hidden = html.match(/name="authenticity_token"\s+value="([^"]+)"/);
-    if (hidden) return hidden[1];
-    const meta = html.match(/<meta\s+name="csrf-token"\s+content="([^"]+)"/);
-    if (meta) return meta[1];
-    return null;
-  }
-
   // Détecte une page de challenge anti-bot (Cloudflare, etc.) plutôt que le contenu attendu —
   // cause fréquente d'échec silencieux quand un site renforce sa protection.
   _detectChallenge(html) {
@@ -154,48 +129,27 @@ class PilotestClient {
       "Attention Required",
       "Checking your browser",
       "captcha",
+      "contrôle anti-robot",
+      "cf-turnstile",
     ];
     const lower = html.toLowerCase();
     return markers.find(m => lower.includes(m.toLowerCase())) ?? null;
   }
 
-  async login() {
-    console.log(`[pilotest] Connexion avec ${this.email}…`);
-
-    const loginPage = await this._get(`${BASE_URL}/fr/users/sign_in`);
-    const html      = await loginPage.text();
-
-    const challenge = this._detectChallenge(html);
-    if (challenge) {
-      saveDebug("login-page-challenge", html);
-      throw new Error(`Page de login bloquée par une protection anti-bot (marqueur : "${challenge}"). Voir debug/login-page-challenge.html.`);
+  // pilotest.com protège désormais /fr/users/sign_in par un Cloudflare Turnstile :
+  // un login scripté (POST email/mot de passe sans navigateur) ne peut plus jamais
+  // obtenir de jeton valide et est systématiquement rejeté. La seule session
+  // utilisable est donc celle fournie manuellement (cookie copié depuis un
+  // navigateur où l'utilisateur s'est connecté lui-même, en résolvant le
+  // captcha comme un humain).
+  ensureSession() {
+    if (!Object.keys(this.cookies).length) {
+      throw new Error(
+        "Aucune session configurée. Le login automatique (email/mot de passe) ne fonctionne plus " +
+        "depuis que pilotest.com protège la connexion par un Cloudflare Turnstile : connecte-toi " +
+        "normalement sur pilotest.com dans ton navigateur, puis colle le cookie de session dans la configuration."
+      );
     }
-
-    const csrf = this._extractCSRF(html);
-    if (!csrf) {
-      saveDebug("login-page-no-csrf", html);
-      throw new Error(`Token CSRF introuvable sur la page de login (HTTP ${loginPage.status}) — la structure du site a probablement changé. Voir debug/login-page-no-csrf.html.`);
-    }
-    console.log(`[pilotest] CSRF : ${csrf.slice(0, 20)}…`);
-
-    const resp      = await this._post(`${BASE_URL}/fr/users/sign_in`, {
-      authenticity_token:  csrf,
-      "user[email]":       this.email,
-      "user[password]":    this.password,
-      "user[remember_me]": "1",
-      commit:              "Se connecter",
-    });
-
-    const finalHtml = await resp.text();
-    console.log(`[pilotest] URL finale après login : ${resp.url} (HTTP ${resp.status})`);
-
-    if (resp.url?.includes("sign_in") || finalHtml.toLowerCase().includes("invalid")) {
-      saveDebug("login-post-response", finalHtml);
-      throw new Error(`Identifiants invalides, ou le formulaire de login a changé (champs attendus différents). Voir debug/login-post-response.html.`);
-    }
-
-    console.log("[pilotest] Connecté ! Cookies stockés :", Object.keys(this.cookies).join(", "));
-    return true;
   }
 
   async fetchResults() {
@@ -213,9 +167,9 @@ class PilotestClient {
     } catch {
       saveDebug("results-response", text);
 
-      // Redirigé vers login → session invalide
+      // Redirigé vers login → session invalide/expirée
       if (text.includes("sign_in")) {
-        throw new Error("Session expirée ou invalide — le login n'a pas fonctionné correctement.");
+        throw new Error("Session expirée ou invalide — reconnecte-toi sur pilotest.com et remplace le cookie de session dans la configuration.");
       }
       const challenge = this._detectChallenge(text);
       if (challenge) {
@@ -257,13 +211,13 @@ function saveCategories(categories) {
 
 const syncState = { running: false, lastError: null };
 
-async function doSync(email, password) {
+async function doSync(cookieHeader) {
   if (syncState.running) return;
   syncState.running   = true;
   syncState.lastError = null;
   try {
-    const client = new PilotestClient(email, password);
-    await client.login();
+    const client = new PilotestClient(cookieHeader);
+    client.ensureSession();
     const results = await client.fetchResults();
     saveCache(results);
     console.log("[sync] Terminée avec succès.");
@@ -316,7 +270,7 @@ const server = http.createServer(async (req, res) => {
     const cfg   = loadJSON(CONFIG_FILE) ?? {};
     const cache = loadCache();
     return jsonRes(res, req, 200, {
-      configured:   !!cfg.email,
+      configured:   !!cfg.cookie,
       sync_running: syncState.running,
       last_error:   syncState.lastError ?? cache.error,
       updated_at:   cache.updated_at,
@@ -368,19 +322,20 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && pathname === "/configure") {
-    const body = await readBody(req);
-    if (!body.email || !body.password)
-      return jsonRes(res, req, 400, { error: "email et password requis" });
-    saveJSON(CONFIG_FILE, { email: body.email, password: body.password });
-    console.log(`[config] Sauvegardé pour ${body.email}`);
+    const body   = await readBody(req);
+    const cookie = typeof body.cookie === "string" ? body.cookie.trim() : "";
+    if (!cookie)
+      return jsonRes(res, req, 400, { error: "cookie requis (copié depuis un navigateur connecté sur pilotest.com)" });
+    saveJSON(CONFIG_FILE, { cookie });
+    console.log("[config] Cookie de session sauvegardé");
     return jsonRes(res, req, 200, { ok: true, message: "Configuration sauvegardée" });
   }
 
   if (req.method === "POST" && pathname === "/sync") {
     const cfg = loadJSON(CONFIG_FILE);
-    if (!cfg?.email) return jsonRes(res, req, 400, { error: "Pas de config. Appelez POST /configure d'abord." });
+    if (!cfg?.cookie) return jsonRes(res, req, 400, { error: "Pas de config. Appelez POST /configure d'abord." });
     if (syncState.running) return jsonRes(res, req, 200, { ok: true, message: "Sync déjà en cours…" });
-    doSync(cfg.email, cfg.password);
+    doSync(cfg.cookie);
     return jsonRes(res, req, 202, { ok: true, message: "Sync démarrée en arrière-plan" });
   }
 
@@ -392,9 +347,9 @@ server.listen(PORT, "0.0.0.0", () => {
   console.log(`  Pilotest Sync Server  —  http://localhost:${PORT}`);
   console.log("═".repeat(50));
   const cfg = loadJSON(CONFIG_FILE);
-  if (cfg?.email) {
-    console.log(`[config] Compte : ${cfg.email}`);
-    doSync(cfg.email, cfg.password);
+  if (cfg?.cookie) {
+    console.log("[config] Session configurée");
+    doSync(cfg.cookie);
   } else {
     console.log("[config] Pas encore configuré.");
   }
