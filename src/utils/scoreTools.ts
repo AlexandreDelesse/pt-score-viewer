@@ -182,6 +182,14 @@ export const computeMean = (list: number[]): number => {
 export const sortScoreList = (list: TestResult[]) =>
   list.sort((a, b) => a.stanine - b.stanine);
 
+// Historique chronologique des scores (%) d'un test donné — utilisé pour les
+// sparklines de la liste et pour les courbes de progression du dashboard.
+export const getScorePercentHistory = (
+  scoreList: TestResult[],
+  testName: string
+): number[] =>
+  scoreList.filter((r) => r.test === testName).map((r) => parseScorePercent(r.score));
+
 // --- Trend ---
 
 export const computeTrend = (scoreList: TestResult[]): number => {
