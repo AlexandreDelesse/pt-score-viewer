@@ -7,7 +7,6 @@ import { getScorePercentHistory } from "../../utils/scoreTools";
 import DashboardCard from "../layout/DashboardCard";
 
 interface Props {
-  scoreList: TestResult[];
   todayResults: TestResult[];
   weekResults: TestResult[];
 }
@@ -15,12 +14,11 @@ interface Props {
 type Scope = "today" | "week";
 
 // Contrairement au graphique de TestDetailPage (l'historique complet d'un
-// seul test), ici on veut voir "d'où je pars, où j'en suis" sur les exercices
-// activement travaillés : l'ensemble des tests affichés est filtré par
-// période (aujourd'hui / cette semaine), mais chaque courbe garde tout
-// l'historique du test pour que la progression se voie vraiment, pas juste
-// les 1-2 tentatives du jour.
-function TodayWeekProgressChart({ scoreList, todayResults, weekResults }: Props) {
+// seul test), ici on veut voir la progression réalisée sur la période
+// affichée elle-même (aujourd'hui / cette semaine) : chaque courbe ne
+// reprend que les tentatives de cette période, pas tout l'historique du
+// test, sinon le graphique ne reflète plus le titre de la carte.
+function TodayWeekProgressChart({ todayResults, weekResults }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [scope, setScope] = useState<Scope>("today");
@@ -29,7 +27,7 @@ function TodayWeekProgressChart({ scoreList, todayResults, weekResults }: Props)
   const testNames = [...new Set(periodResults.map((r) => r.test))];
 
   const series = testNames
-    .map((name) => ({ name, data: getScorePercentHistory(scoreList, name) }))
+    .map((name) => ({ name, data: getScorePercentHistory(periodResults, name) }))
     .filter((s) => s.data.length > 1);
 
   const skippedCount = testNames.length - series.length;

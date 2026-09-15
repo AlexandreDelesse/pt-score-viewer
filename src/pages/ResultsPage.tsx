@@ -167,11 +167,7 @@ export default function ResultsPage({
               </Grid>
               <Grid size={{ xs: 12, md: 7 }}>
                 <WeeklyProgressPanel entries={workOnList} weekResults={weekResults} dailyFocus={dailyFocus} />
-                <TodayWeekProgressChart
-                  scoreList={filteredScoreList}
-                  todayResults={todayResults}
-                  weekResults={weekResults}
-                />
+                <TodayWeekProgressChart todayResults={todayResults} weekResults={weekResults} />
               </Grid>
             </Grid>
           )}
