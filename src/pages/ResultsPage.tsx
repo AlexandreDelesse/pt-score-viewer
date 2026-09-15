@@ -7,6 +7,7 @@ import PtResultNbResume, { type ResumePeriod } from "../components/results/PtRes
 import PeriodResultsDialog from "../components/results/PeriodResultsDialog";
 import ExamGoalPanel from "../components/results/ExamGoalPanel";
 import WeeklyProgressPanel from "../components/results/WeeklyProgressPanel";
+import TodayWeekProgressChart from "../components/results/TodayWeekProgressChart";
 import PtResultList from "../components/results/PtResultList";
 import JsonImportButton from "../components/import/JsonImportButton";
 import SyncButton from "../components/sync/SyncButton";
@@ -16,7 +17,7 @@ import useExamGoal from "../hooks/useExamGoal";
 import {
   countNewResults,
   filterByCategory,
-  parseScorePercent,
+  getScorePercentHistory,
   type CategoryFilter,
 } from "../utils/scoreTools";
 
@@ -69,7 +70,7 @@ export default function ResultsPage({
   // Historique chronologique des scores (%) d'un test, pour la sparkline de
   // la card — filteredScoreList est déjà trié du plus ancien au plus récent.
   const getScoreHistory = (testName: string): number[] =>
-    filteredScoreList.filter((r) => r.test === testName).map((r) => parseScorePercent(r.score)).slice(-10);
+    getScorePercentHistory(filteredScoreList, testName).slice(-10);
 
   const handleTestClick = (t: TestResult) => onTestClick(t.test);
 
@@ -166,6 +167,11 @@ export default function ResultsPage({
               </Grid>
               <Grid size={{ xs: 12, md: 7 }}>
                 <WeeklyProgressPanel entries={workOnList} weekResults={weekResults} dailyFocus={dailyFocus} />
+                <TodayWeekProgressChart
+                  scoreList={filteredScoreList}
+                  todayResults={todayResults}
+                  weekResults={weekResults}
+                />
               </Grid>
             </Grid>
           )}
